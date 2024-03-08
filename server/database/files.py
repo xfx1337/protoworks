@@ -11,13 +11,14 @@ class Files:
             id serial,
             path VARCHAR(255) PRIMARY KEY,
             date_modified INT,
-            file_size INT
+            file_size INT,
+            project_id INT
         )
         """)
     
     def register_update(self, data):
         write_sql = "REPLACE INTO files (path, date_modified, file_size) VALUES "
-        for f in data["files"]:
+        for f in data:
             path = f["path"]
             date = int(f["date_modified"])
             file_size = int(f["size"])

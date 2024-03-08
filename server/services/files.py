@@ -58,10 +58,10 @@ def upload_data_zip(request):
 
     utils.delete_file(os.path.join(config["path"]["temp_path"], obj["filename"]))
 
-    for i in range(len(data_file)):
-        data_file[i]["path"] = os.path.join(data_file["project"]["server_path"], data_file[i]["path"])
+    for i in range(len(data_file["files"])):
+        data_file["files"][i]["path"] = os.path.join(data_file["project"]["server_path"], data_file["files"][i]["path"])
 
-    db.files.register_update(data["files"])
+    db.files.register_update(data_file["files"])
 
     return "Получено", 200
 
