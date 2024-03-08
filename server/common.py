@@ -1,0 +1,5 @@
+INVALID_REQUEST_ASNWER = ("Invalid request", 400)
+AUTH_ERROR = ("Invalid auth", 302)
+
+PROJECT_IN_WORK = 0
+PROJECT_DONE = 1
