@@ -1,3 +1,3 @@
-cd D:\ProtoWorks\client
+cd client
 python app.py
 pause

@@ -1,3 +1,3 @@
-cd D:\ProtoWorks\server\
+cd server
 python main.py
 pause

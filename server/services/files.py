@@ -60,6 +60,7 @@ def upload_data_zip(request):
 
     for i in range(len(data_file["files"])):
         data_file["files"][i]["path"] = os.path.join(data_file["project"]["server_path"], data_file["files"][i]["path"])
+        data_file["files"][i]["project_id"] = data_file["project"]["id"]
 
     db.files.register_update(data_file["files"])
 
