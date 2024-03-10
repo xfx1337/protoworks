@@ -5,7 +5,8 @@ class Files:
     def __init__(self, db):
         self.cursor = db.cursor
         self.connection = db.connection 
-
+        self.db = db
+        
         self.cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS files (
             id serial,

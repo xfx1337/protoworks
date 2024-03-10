@@ -72,10 +72,13 @@ class ProjectsWidget(QWidget, Tab):
         self.update_data()
     
     def update_data(self):
-        try: data = env.net_manager.projects.get_projects()
+        try: 
+            data = env.net_manager.projects.get_projects()
+            sync_data = env.net_manager.audit.get_projects_sync_data()
         except Exception as e: 
             utils.message(str(e))
             return
+
         
         for p in self.projects_entries:
             if p.parent() != None:
@@ -89,6 +92,16 @@ class ProjectsWidget(QWidget, Tab):
 
         for i in range(len(projects)):
             project = projects[i]
+            last_synced = None
+            if str(project["id"]) in sync_data: # for some fucken reason
+                last_synced_server = sync_data[str(project["id"])]
+                project["last_synced_server"] = last_synced_server
+            
+            data = env.db.projects_sync.get_projects_sync_data()
+            if project["id"] in data:
+                last_synced_client = data[project["id"]]
+                project["last_synced_client"] = last_synced_client
+
             p = ProjectListEntry(project, parent=self)
             self.scrollWidgetLayout.insertWidget(i, p)
             self.scrollWidgetLayout.setAlignment(p, Qt.AlignmentFlag.AlignTop)

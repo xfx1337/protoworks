@@ -8,6 +8,7 @@ from database.database import Database
 db = Database()
 
 import uuid
+import time
 
 from config import Config
 config = Config("config.ini")
@@ -97,3 +98,6 @@ def get_file_size(path):
 
 def get_unique_id():
     return str(uuid.uuid1())
+
+def time_now():
+    return int(time.time())

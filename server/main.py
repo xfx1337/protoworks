@@ -17,6 +17,7 @@ from database.database import Database
 import services.auth
 import services.projects
 import services.files
+import services.audit
 
 sys.dont_write_bytecode = True # no pycache now
 
@@ -108,6 +109,10 @@ def get_zipped_path():
 @app.route('/api/files/get_zipped_files', methods = ['POST'])
 def get_zipped_files():
     return services.files.get_zipped_files(request)
+
+@app.route('/api/audit/get_projects_sync_data', methods = ['POST'])
+def get_projects_sync_data():
+    return services.audit.get_projects_sync_data(request)
 
 app.run(threaded=True, debug=False, host="0.0.0.0")
 CORS(app)

@@ -51,8 +51,10 @@ class Files:
         
         cr.close_file_handler()
 
-        self.env.file_manager.delete_file(src_path)
+        data = json.loads(r.text)
 
+        self.env.file_manager.delete_file(src_path)
+        return data
 
     def send_files(self, src_path, dest_path, progress=None, filter_func=None, additional_data_to_send=None):
         files_list = self.env.file_manager.get_files_list(src_path)
@@ -68,11 +70,13 @@ class Files:
         # self.create_dirs(dirs_relative, dest_path)
 
         path = self.env.file_manager.make_data_zip(files_list, relative=src_path, additional_data_to_send=additional_data_to_send)
-        self.send_data_zip(path, dest_path, progress=progress)
+        data = self.send_data_zip(path, dest_path, progress=progress)
+        return data
 
     def transfer_project_sources(self, src_path, project, progress=None):
         project_data = ProjectData(project)
-        self.send_files(src_path, project["server_path"], progress=progress, additional_data_to_send=project_data)
+        data = self.send_files(src_path, project["server_path"], progress=progress, additional_data_to_send=project_data)
+        self.env.db.projects_sync.set_project_sync_date(project["id"], int(data["date"]))
 
 
     def delete_path(self, path):

@@ -63,8 +63,14 @@ def upload_data_zip(request):
         data_file["files"][i]["project_id"] = data_file["project"]["id"]
 
     db.files.register_update(data_file["files"])
+    event = {
+        "event": "UPLOAD",
+        "info": str(json.dumps(data_file)),
+        "project_id": int(data_file["project"]["id"])
+    }
+    update_info = db.audit.register_event(event)
 
-    return "Получено", 200
+    return str(json.dumps(update_info)), 200
 
 def delete_path(request):
     data = request.get_json()

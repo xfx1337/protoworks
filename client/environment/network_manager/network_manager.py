@@ -5,6 +5,7 @@ from singleton import singleton
 from environment.network_manager.auth import Auth
 from environment.network_manager.projects import Projects
 from environment.network_manager.files import Files
+from environment.network_manager.audit import Audit
 
 import exceptions
 
@@ -21,6 +22,7 @@ class NetworkManager:
         self.auth = Auth(self)
         self.projects = Projects(self)
         self.files = Files(self)
+        self.audit = Audit(self)
 
         self._auto_login = False
 

@@ -87,7 +87,7 @@ class MainWindow(QMainWindow):
         self.body_container.setLayout(self.body_container_layout)
 
         bg_style = """
-        QSplitter { background-image: url("UI/templates/images/backgrounds/proto_logo.png"); 
+        QSplitter { background-image: url("UI/templates/images/backgrounds/cnchell_logo.png"); 
         background-repeat: no-repeat; 
         background-position: center; }
         """

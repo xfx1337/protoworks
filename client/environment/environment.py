@@ -8,6 +8,7 @@ from environment.network_manager.network_manager import NetworkManager
 from environment.config_manager.config_manager import Config
 from environment.templates_manager.templates_manager import TemplatesManager
 from environment.file_manager.file_manager import FileManager
+from environment.database.db import Database
 
 import utils
 
@@ -24,6 +25,8 @@ class Environment():
 
         self.templates_manager = TemplatesManager(self)
         self.file_manager = FileManager(self)
+
+        self.db = Database()
 
         self.main_signals = None
 

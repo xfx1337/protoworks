@@ -5,12 +5,15 @@ from defines import *
 class File:
     def __init__(self, path=None, date_modified=None, size=None, host_pc=CUR_CLIENT, f_type=FILE, JSON=None):
         self.path = path
-        self.date_modified = date_modified
+        if date_modified != None:
+            self.date_modified = int(date_modified)
+        else:
+            self.date_modified = date_modified
         self.size = size
         self.host_pc = host_pc
         self.f_type = f_type
         if self.path != None and self.host_pc == CUR_CLIENT and self.date_modified == None and self.f_type == FILE:
-            self.date_modified = os.path.getmtime(self.path)
+            self.date_modified = int(os.path.getmtime(self.path))
         if self.path != None and self.host_pc == CUR_CLIENT and self.size == None and self.f_type == FILE:
             self.size = os.path.getsize(self.path)
 
