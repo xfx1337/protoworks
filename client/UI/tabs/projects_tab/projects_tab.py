@@ -27,9 +27,14 @@ from UI.widgets.QAskForFilesDialog import QAskForFilesDialog
 
 from UI.widgets.QEasyScroll import QEasyScroll
 
+from UI.tabs.TabSignals import TabSignals
+
 class ProjectsWidget(QWidget, Tab):
     def __init__(self):
         super().__init__()
+
+        self.signals = TabSignals()
+        self.signals.update_tab.connect(self.update_data)
 
         self.projects_entries = []
 
@@ -94,13 +99,15 @@ class ProjectsWidget(QWidget, Tab):
             project = projects[i]
             last_synced = None
             if str(project["id"]) in sync_data: # for some fucken reason
-                last_synced_server = sync_data[str(project["id"])]
+                last_synced_server = sync_data[str(project["id"])]["date"]
                 project["last_synced_server"] = last_synced_server
+                project["update_id_server"] = sync_data[str(project["id"])]["update_id"]
             
             data = env.db.projects_sync.get_projects_sync_data()
             if project["id"] in data:
-                last_synced_client = data[project["id"]]
+                last_synced_client = data[project["id"]]["date"]
                 project["last_synced_client"] = last_synced_client
+                project["update_id_client"] = data[project["id"]]["update_id"]
 
             p = ProjectListEntry(project, parent=self)
             self.scrollWidgetLayout.insertWidget(i, p)

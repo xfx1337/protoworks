@@ -76,8 +76,13 @@ class Files:
     def transfer_project_sources(self, src_path, project, progress=None):
         project_data = ProjectData(project)
         data = self.send_files(src_path, project["server_path"], progress=progress, additional_data_to_send=project_data)
-        self.env.db.projects_sync.set_project_sync_date(project["id"], int(data["date"]))
-
+        self.env.db.projects_sync.set_project_sync_date(project["id"], int(data["date"]), data["update_id"])
+        
+        tab_type = type(self.env.main_window.get_tab_by_alias("projects")())
+        tabs = self.env.tab_manager.get_opened_tabs_by_type(tab_type)
+        for t in tabs:
+            tab = self.env.tab_manager.get_tab_by_id(t)
+            tab.signals.update_tab.emit()
 
     def delete_path(self, path):
         r = self.net_manager.request("/api/files/delete_path", {"path": path})

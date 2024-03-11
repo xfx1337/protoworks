@@ -21,6 +21,9 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         env.templates_manager.load_templates() # before i cant init fucking pixmap before app starts..
+        env.main_window = self
+        self.get_tab_by_alias = tabs_aliases.get_tab_by_alias
+        self.tabs_aliases = tabs_aliases.TABS_ALIASES
 
         self.setWindowTitle(f"ProtoWorks [{env.cwd}]")
         self.setWindowIcon(env.templates_manager.icons["proto"])
@@ -87,7 +90,7 @@ class MainWindow(QMainWindow):
         self.body_container.setLayout(self.body_container_layout)
 
         bg_style = """
-        QSplitter { background-image: url("UI/templates/images/backgrounds/cnchell_logo.png"); 
+        QSplitter { background-image: url("UI/templates/images/backgrounds/protoworks_logo.png"); 
         background-repeat: no-repeat; 
         background-position: center; }
         """
@@ -124,7 +127,7 @@ class MainWindow(QMainWindow):
         if alias == None:
             return
 
-        tab = tabs_aliases.get_tab_by_alias(alias)
+        tab = tabs_aliases.get_tab_by_alias(alias)()
 
         id = env.tab_manager.open_tab(tab)
         self.body_splitter.addWidget(tab)

@@ -26,6 +26,17 @@ class TabManager():
             
     def get_tabs_count(self):
         return len(list(self.opened_tabs.keys()))
+
+    def get_opened_tabs_by_type(self, tab_type):
+        ret = []
+        for tab in self.opened_tabs.keys():
+            if type(self.opened_tabs[tab]) == tab_type:
+                ret.append(tab)
+        
+        return ret
     
+    def get_tab_by_id(self, id):
+        return self.opened_tabs[id]
+
     def set_refresh_callback(self, func):
         self.refresh_callback = func

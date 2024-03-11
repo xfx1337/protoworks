@@ -23,7 +23,7 @@ class ProjectPropertiesWidget(QWidget):
 
         self.setWindowTitle(f"Свойства проекта")
         self.setWindowIcon(templates_manager.icons["proto"])
-        self.setFixedSize(QSize(400, 400))
+        self.setFixedSize(QSize(600, 600))
 
         self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
 
@@ -53,7 +53,13 @@ class ProjectPropertiesWidget(QWidget):
         if "last_synced_client" in self.project:
             last_synced_client_s = QDictShow("Последнее обновление на клиенте:", utils.time_by_unix(self.project["last_synced_client"]), key_space)
             self.layout.addWidget(last_synced_client_s)
-
+        
+        if "update_id_server" in self.project:
+            update_id_server_s = QDictShow("Идентификатор обновления на сервере:", self.project["update_id_server"], key_space)
+            self.layout.addWidget(update_id_server_s)
+        if "update_id_client" in self.project:
+            update_id_client_s = QDictShow("Идентификатор обновления на клиенте:", self.project["update_id_client"], key_space)
+            self.layout.addWidget(update_id_client_s)
     
         self.setLayout(self.layout)
 

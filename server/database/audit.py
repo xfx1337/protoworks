@@ -2,6 +2,8 @@ from singleton import singleton
 
 import utils
 
+import json
+
 @singleton
 class Audit:
     def __init__(self, db):
@@ -26,7 +28,7 @@ class Audit:
             project_id = int(data["project_id"])
         info = None
         if "info" in data:
-            info = data["project_id"]
+            info = data["info"]
         date = utils.time_now()
         data["date"] = date
         write_sql = f"INSERT INTO audit (event, date, info, project_id) VALUES ('{event}', {date}, '{info}', {project_id})"
@@ -46,5 +48,5 @@ class Audit:
             self.cursor.execute(sql)
             info = self.cursor.fetchone()
             if info != None:
-                ret["projects"][int(info[-1])] = int(info[-3])
+                ret["projects"][int(info[-1])] = {"date": int(info[-3]), "update_id": str(json.loads(info[-2])["update_id"])}
         return ret

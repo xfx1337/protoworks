@@ -25,3 +25,10 @@ TOOLTIP = """QToolTip {
     padding: 5px;
     opacity: 200;
 }""" # for some reason in dark theme, tooltips are broken..
+
+def combine(l):
+    sheet = l[0][:-1]
+    for i in range(1, len(l)):
+        sheet += (l[i][:-1])
+    sheet += "}"
+    return sheet

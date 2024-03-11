@@ -63,13 +63,14 @@ def upload_data_zip(request):
         data_file["files"][i]["project_id"] = data_file["project"]["id"]
 
     db.files.register_update(data_file["files"])
+    data_file["update_id"] = str(utils.get_unique_id())
     event = {
         "event": "UPLOAD",
         "info": str(json.dumps(data_file)),
         "project_id": int(data_file["project"]["id"])
     }
     update_info = db.audit.register_event(event)
-
+    update_info["update_id"] = data_file["update_id"]
     return str(json.dumps(update_info)), 200
 
 def delete_path(request):

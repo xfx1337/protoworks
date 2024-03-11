@@ -11,7 +11,8 @@ class ProjectsSync:
         CREATE TABLE IF NOT EXISTS projects_sync (
             id serial,
             project_id INT UNIQUE,
-            last_synced_client_date INT
+            last_synced_client_date INT,
+            update_id VARCHAR(64)
         )
         """)
     
@@ -22,11 +23,11 @@ class ProjectsSync:
         ret = {}
         if content != None:
             for p in content:
-                ret[p[1]] = p[2]
+                ret[p[1]] = {"date": p[2], "update_id": p[3]}
         return ret
     
-    def set_project_sync_date(self, project_id, date):
-        write_sql = f"INSERT INTO projects_sync (project_id, last_synced_client_date) VALUES ({project_id}, {date}) ON CONFLICT (project_id) DO UPDATE SET last_synced_client_date=excluded.last_synced_client_date"
+    def set_project_sync_date(self, project_id, date, update_id):
+        write_sql = f"INSERT INTO projects_sync (project_id, last_synced_client_date, update_id) VALUES ({project_id}, {date}, '{update_id}') ON CONFLICT (project_id) DO UPDATE SET last_synced_client_date=excluded.last_synced_client_date"
         self.cursor.execute(write_sql)
         self.connection.commit()
     

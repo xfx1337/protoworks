@@ -41,7 +41,7 @@ class ProjectListEntry(QDoubleLabel):
         
             if "last_synced_client" in project:
                 if project["last_synced_client"] < project["last_synced_server"]:
-                    self.label2.setStyleSheet(stylesheets.YELLOW_HIGHLIGHT)
+                    self.label2.setStyleSheet(stylesheets.combine([stylesheets.YELLOW_HIGHLIGHT, stylesheets.DISABLE_BORDER]))
 
         self.menu = QMenu(self)
         self.menu.setStyleSheet(stylesheets.DEFAULT_BORDER_STYLESHEET)
@@ -60,11 +60,11 @@ class ProjectListEntry(QDoubleLabel):
         action_properties.triggered.connect(self.open_properties)
 
         if self.project["status"] == defines.PROJECT_IN_WORK and utils.unix_is_expired(self.project["time_deadline"]):
-            self.setStyleSheet(stylesheets.YELLOW_HIGHLIGHT)
+            self.label1.setStyleSheet(stylesheets.combine([stylesheets.YELLOW_HIGHLIGHT, stylesheets.DISABLE_BORDER]))
             self.label1.setText(f'[Просрочен] {self.project["name"]}')
         
         if self.project["status"] == defines.PROJECT_DONE:
-            self.setStyleSheet(stylesheets.BLACK_HIGHLIGHT)
+            self.setStyleSheet(stylesheets.combine([BLACK_HIGHLIGHT, DISABLE_BORDER]))
             self.label1.setText(f'[Сдан] {self.project["name"]}')
 
     def contextMenuEvent(self, event):

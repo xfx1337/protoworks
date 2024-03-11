@@ -4,4 +4,4 @@ from UI.tabs.settings_tab.settings_tab import SettingsWidget
 TABS_ALIASES = {"projects": ProjectsWidget, "settings": SettingsWidget}
 
 def get_tab_by_alias(alias):
-    return TABS_ALIASES[alias]()
+    return TABS_ALIASES[alias]

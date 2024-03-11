@@ -29,6 +29,7 @@ class Environment():
         self.db = Database()
 
         self.main_signals = None
+        self.main_window = None
 
         self.get_from_config()
 
