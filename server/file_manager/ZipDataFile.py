@@ -1,4 +1,4 @@
-from defines import *
+from common import *
 
 import utils, time, os, json, getpass
 

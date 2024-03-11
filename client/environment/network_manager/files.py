@@ -142,7 +142,7 @@ class Files:
             self.delete_path(project["server_path"])
             self.mkdir(project["server_path"])
 
-            self.transfer_project_sources(os.path.join(cfg["path"]["projects_path"], project["name"]), project["server_path"], progress)
+            self.transfer_project_sources(os.path.join(cfg["path"]["projects_path"], project["name"]), project, progress)
         
         elif action == defines.ACTION_OVERRIDE_CLIENT_FILES:
             self._override_client_files(project, progress)
@@ -287,6 +287,7 @@ class Files:
     def _override_client_files(self, project, progress=None):
         cfg = self.env.config_manager
         path = os.path.join(cfg["path"]["projects_path"], project["name"])
+        print(path)
         if os.path.isdir(path):
             try: shutil.rmtree(path, ignore_errors=False, onerror=None)
             except: 
@@ -296,11 +297,16 @@ class Files:
         os.mkdir(path)
 
         filepath = self.get_zipped_path(project["server_path"], progress=progress)
-
-        utils.unzip(zip=filepath, destination=cfg["path"]["projects_path"])
-
-        utils.delete_file(filepath)
+        #utils.unzip(zip=filepath, destination=cfg["path"]["projects_path"])
+        #utils.delete_file(filepath)
         
+        print(filepath)
+
+        projects = self.net_manager.audit.get_projects_sync_data()
+        if str(project["id"]) in projects: # for some fucken reason2
+            data = projects[str(project["id"])]
+            self.env.db.projects_sync.set_project_sync_date(project["id"], int(data["date"]), data["update_id"])
+
         return 0
 
     

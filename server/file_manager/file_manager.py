@@ -1,19 +1,22 @@
-from environment.file_manager.File import File
-from environment.file_manager.ZipDataFile import ZipDataFile
+from file_manager.File import File
+from file_manager.ZipDataFile import ZipDataFile
 
 import zipfile
 
 from singleton import singleton
 
-from defines import *
+from common import *
+
+from config import Config
+config = Config("config.ini")
 
 import utils
 import os
 
 @singleton
 class FileManager:
-    def __init__(self, env):
-        self.env = env
+    def __init__(self):
+        pass
     
     def get_files_list(self, path):
         files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(path) for f in filenames]
@@ -57,8 +60,8 @@ class FileManager:
             data_file.create_additional_data(additional_data_to_send)
 
         file_name = utils.get_unique_id()
-        data_filename = os.path.join(self.env.config_manager["path"]["temp_path"], (file_name))+".txt"
-        zip_filename = os.path.join(self.env.config_manager["path"]["temp_path"], (file_name))+".zip"
+        data_filename = os.path.join(config["path"]["temp_path"], (file_name))+".txt"
+        zip_filename = os.path.join(config["path"]["temp_path"], (file_name))+".zip"
 
         with open(data_filename, "w", encoding="utf-8") as f:
             f.write(data_file.string())

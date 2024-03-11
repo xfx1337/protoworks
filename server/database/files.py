@@ -18,6 +18,8 @@ class Files:
         """)
     
     def register_update(self, data):
+        if len(data) < 1:
+            return
         write_sql = "INSERT INTO files (path, date_modified, file_size, project_id) VALUES "
         for f in data:
             path = f["path"]

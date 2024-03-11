@@ -17,9 +17,12 @@ db = Database()
 from config import Config
 config = Config("config.ini")
 
+from file_manager.file_manager import FileManager
+file_manager = FileManager()
+
 from common import *
 
-from zipfile import ZipFile 
+from zipfile import ZipFile
 
 def create_dirs(request):
     data = request.get_json()
@@ -138,25 +141,23 @@ def get_zipped_path(request):
     if not ret:
         return "Токен не валиден", 403
 
-    name = utils.get_unique_id()
+    files_list = file_manager.get_files_list(src_path)
 
-    file_path = os.path.join(config["path"]["temp_path"], name) + ".zip"
+    path = file_manager.make_data_zip(files_list, relative=src_path)
 
-    utils.zip(src_path, dest_path=file_path)
-
-    size = utils.get_file_size(file_path)
+    size = utils.get_file_size(path)
 
     response = Response(
-        stream_with_context(utils._read_file_chunks(file_path)),
+        stream_with_context(utils._read_file_chunks(path)),
         headers={
-            'Content-Disposition': f'attachment; filename={name + ".zip"}',
+            'Content-Disposition': f'attachment; filename={path.split("/")[-1] + ".zip"}',
             'Content-Length': size
         }
     )
 
     @response.call_on_close
     def on_close():
-        utils.delete_file(file_path)
+        utils.delete_file(path)
 
     return response
 

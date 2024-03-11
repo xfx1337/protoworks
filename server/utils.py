@@ -9,11 +9,12 @@ db = Database()
 
 import uuid
 import time
+from datetime import datetime as dt
 
 from config import Config
 config = Config("config.ini")
 
-from ZipDataFileDecoder import ZipDataFileDecoder
+from file_manager.ZipDataFileDecoder import ZipDataFileDecoder
 zip_data_file_decoder = ZipDataFileDecoder()
 
 def check_userlist():
@@ -25,6 +26,9 @@ def check_userlist():
             ret = db.users.register(user[0], hashlib.md5(user[1].encode()).hexdigest(), user[2])
             if ret == 0:
                 print(f"[users] registered new user: {user[0]}")
+
+def time_by_unix(t):
+    return dt.fromtimestamp(t).strftime("%d/%m/%Y, %H:%M:%S")
 
 def json_str(s):
     return json.dumps(s, indent=4)
