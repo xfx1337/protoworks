@@ -26,6 +26,9 @@ from UI.widgets.QFilesListSureDialog import QFilesListSureDialog
 
 import environment.task_manager.statuses as statuses
 
+from environment.file_manager.File import File
+from environment.file_manager.ZipDataAdditionalTypes import ProjectData
+
 import defines
 
 class ProjectListEntry(QDoubleLabel):
@@ -145,18 +148,17 @@ class ProjectListEntry(QDoubleLabel):
         real_files = []
 
         for f in files:
-            real_files.append(f["filename"])
+            real_files.append(File(f["path"]))
 
         if sure[0] == True:
             if len(files) == 0:
                 dc["task"].end_task(statuses.ENDED)
                 return
             if fr == "client":
-                func = lambda: env.net_manager.files.send_files_creating_dirs(real_files, os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]), 
-                    self.project["server_path"], progress=dc["task"].progress)
+                func = lambda: env.net_manager.files.transfer_project_sources(
+                    os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]), self.project, progress=dc["task"].progress, files_only=real_files)
             else:
-                func = lambda: env.net_manager.files.get_files_creating_dirs(real_files, os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]), 
-                self.project["server_path"], progress=dc["task"].progress)
+                func = lambda: env.net_manager.files.get_zipped_files(real_files, self.project, progress=dc["task"].progress)
 
             env.task_manager.replace_task(dc["task_id"], func)
         else:

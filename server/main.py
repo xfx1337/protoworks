@@ -102,6 +102,10 @@ def dir_tree():
 def files_list():
     return services.files.files_list(request)
 
+@app.route('/api/files/files_list_for_project', methods = ['POST'])
+def files_list_for_project():
+    return services.files.files_list_for_project(request)
+
 @app.route('/api/files/get_zipped_path', methods = ['POST'])
 def get_zipped_path():
     return services.files.get_zipped_path(request)

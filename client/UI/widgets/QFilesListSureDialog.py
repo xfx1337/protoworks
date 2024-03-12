@@ -96,7 +96,7 @@ class QFilesListSureDialog(QDialog):
         self.files_no_entries = []
 
         for i in range(len(self.files_yes)):
-            path = self.files_yes[i]["filename"]
+            path = self.files_yes[i]["path"]
             path_show = path
             if self.path_dont_show != None:
                 if self.path_dont_show in path:
@@ -105,13 +105,13 @@ class QFilesListSureDialog(QDialog):
                         path_show = path_show[1:]
 
             e = QListEntry(path_show, mouse_left_callback=lambda val=i: self.select("yes", val))
-            e.setToolTip("Путь:" + path + "\nПоследнее изменение: " + utils.time_by_unix(self.files_yes[i]["modification_time"]))
+            e.setToolTip("Путь:" + path + "\nПоследнее изменение: " + utils.time_by_unix(self.files_yes[i]["date_modified"]))
             self.files_yes_entries.append(e)
             self.files_yes_scroll.scrollWidgetLayout.insertWidget(i, e)
             self.files_yes_scroll.scrollWidgetLayout.setAlignment(e, Qt.AlignmentFlag.AlignTop)
 
         for i in range(len(self.files_no)):
-            path = self.files_no[i]["filename"]
+            path = self.files_no[i]["path"]
             path_show = path
             if self.path_dont_show != None:
                 if self.path_dont_show in path:
@@ -119,7 +119,7 @@ class QFilesListSureDialog(QDialog):
                     if path_show[0] == "\\":
                         path_show = path_show[1:]
             e = QListEntry(path_show, mouse_left_callback=lambda val=i: self.select("no", val))
-            e.setToolTip("Путь:" + path + "\nПоследнее изменение: " + utils.time_by_unix(self.files_no[i]["modification_time"]))
+            e.setToolTip("Путь:" + path + "\nПоследнее изменение: " + utils.time_by_unix(self.files_no[i]["date_modified"]))
             self.files_no_entries.append(e)
             self.files_no_scroll.scrollWidgetLayout.insertWidget(i, e)
             self.files_no_scroll.scrollWidgetLayout.setAlignment(e, Qt.AlignmentFlag.AlignTop)

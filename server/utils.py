@@ -14,9 +14,6 @@ from datetime import datetime as dt
 from config import Config
 config = Config("config.ini")
 
-from file_manager.ZipDataFileDecoder import ZipDataFileDecoder
-zip_data_file_decoder = ZipDataFileDecoder()
-
 def check_userlist():
     with open("userlist.txt", "r") as f:
         for line in f.readlines():
@@ -73,26 +70,6 @@ def zip_files(files, src_path, dest_path):
                     if zip_name[0] == "\\":
                         zip_name = zip_name[1:]
                     archive.write(real_file_path, zip_name)
-
-def unzip_data_archive(path):
-    data = ""
-    with zipfile.ZipFile(path, 'r') as archive:
-        with archive.open('PROTOWORKS_DATA.txt') as data_file:
-            data = str(data_file.read().decode('UTF-8'))
-            data = zip_data_file_decoder.decode(data)
-        
-        server_path = data["project"]["server_path"]
-        
-        if "dirs" in data:
-            for d in data["dirs"]:
-                os.mkdir(os.path.join(server_path, d))
-        
-        if "files" in data:
-            for f in data["files"]:
-                archive.extract(f["arch_filename"], config["path"]["temp_path"])
-                os.rename(os.path.join(config["path"]["temp_path"], f["arch_filename"]), os.path.join(server_path, f["path"]))
-    
-    return data
 
 def delete_file(path):
     os.remove(path)

@@ -10,6 +10,9 @@ from defines import *
 import utils
 import os
 
+from environment.file_manager.ZipDataFileDecoder import ZipDataFileDecoder
+zip_data_file_decoder = ZipDataFileDecoder()
+
 @singleton
 class FileManager:
     def __init__(self, env):
@@ -69,6 +72,26 @@ class FileManager:
 
         return zip_filename
     
+    def unzip_data_archive(self, path, extract_to):
+        data = ""
+        with zipfile.ZipFile(path, 'r') as archive:
+            with archive.open('PROTOWORKS_DATA.txt') as data_file:
+                data = str(data_file.read().decode('UTF-8'))
+                data = zip_data_file_decoder.decode(data)
+            
+            if "dirs" in data:
+                for d in data["dirs"]:
+                    os.mkdir(os.path.join(extract_to, d))
+            
+            if "files" in data:
+                for f in data["files"]:
+                    archive.extract(f["arch_filename"], self.env.config_manager["path"]["temp_path"])
+                    os.rename(os.path.join(self.env.config_manager["path"]["temp_path"], f["arch_filename"]), os.path.join(extract_to, f["path"]))
+        return data
+
+    def set_modification_time(self, path, time):
+        os.utime(path, (time, time))
+
     def scan_for_subdirs(self, dirname):
         subfolders = self._scan_for_subdirs(dirname)
 

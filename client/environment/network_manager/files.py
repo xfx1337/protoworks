@@ -18,6 +18,7 @@ from environment.file_manager.ChunkReader import ChunkReader
 from UI.widgets.QFilesListSureDialog import QFilesListSureDialog
 
 from environment.file_manager.ZipDataAdditionalTypes import ProjectData
+from environment.file_manager.File import File
 
 import defines
 
@@ -56,11 +57,13 @@ class Files:
         self.env.file_manager.delete_file(src_path)
         return data
 
-    def send_files(self, src_path, dest_path, progress=None, filter_func=None, additional_data_to_send=None):
+    def send_files(self, src_path, dest_path, progress=None, filter_func=None, additional_data_to_send=None, files_only=None):
         files_list = self.env.file_manager.get_files_list(src_path)
 
         if filter_func != None:
             files_list = filter_func(files_list)
+        if files_only:
+            files_list = files_only
 
         progress.full = self.env.file_manager.get_list_size(files_list)
 
@@ -73,9 +76,9 @@ class Files:
         data = self.send_data_zip(path, dest_path, progress=progress)
         return data
 
-    def transfer_project_sources(self, src_path, project, progress=None):
+    def transfer_project_sources(self, src_path, project, progress=None, files_only=None):
         project_data = ProjectData(project)
-        data = self.send_files(src_path, project["server_path"], progress=progress, additional_data_to_send=project_data)
+        data = self.send_files(src_path, project["server_path"], progress=progress, additional_data_to_send=project_data, files_only=files_only)
         self.env.db.projects_sync.set_project_sync_date(project["id"], int(data["date"]), data["update_id"])
         
         tab_type = type(self.env.main_window.get_tab_by_alias("projects")())
@@ -109,6 +112,13 @@ class Files:
             raise exceptions.REQUEST_FAILED("Не удалось получить дерево файлов сервера", no_message=True)
 
         return r.json()["files"]
+    
+    def request_files_list_for_project(self, project_id):
+        r = self.net_manager.request("/api/files/files_list_for_project", {"project_id": project_id})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED("Не удалось получить дерево файлов сервера", no_message=True)
+
+        return r.json()["files"]
 
     def get_zipped_path(self, path, progress=None):
         return self.get_zipped_files(path, progress=progress, by_path=True)
@@ -122,7 +132,7 @@ class Files:
             data = {"path": path, "token": self.net_manager.token}
         else:
             url = "/api/files/get_zipped_files"
-            data = {"path": path, "files": files, "token": self.net_manager.token}
+            data = {"files": files, "token": self.net_manager.token}
         with requests.post(self.net_manager.host+url, stream=True, 
             data = data, 
             headers = {'Content-type':'application/json'}) as r:
@@ -165,37 +175,31 @@ class Files:
         cfg = self.env.config_manager
         path = os.path.join(cfg["path"]["projects_path"], project["name"])
 
-        server_file_list = self.request_files_list(project["server_path"])
-        server_file_list_dict = {}
+        server_file_list = self.request_files_list_for_project(project["id"])
 
-        for i in range(len(server_file_list)):
-            server_file_list_dict[server_file_list[i]["filename"]] = server_file_list[i]["modification_time"]
-            server_file_list[i] = server_file_list[i]["filename"]
+        server_file_list_relative = []
+        for f in server_file_list:
+            if f["f_type"] == defines.FILE:
+                server_file_list_relative.append(utils.remove_path(project["server_path"], f["path"]))
 
-        dirs, _ = utils.get_dirs_files(path+"\\")
-        client_file_list = utils.get_files_with_modification_time(path+"\\")
-        client_file_list_dict = {}
+        client_file_list = self.env.file_manager.get_files_list(path)
+        client_file_list_relative = []
+        for f in client_file_list:
+            if f.f_type == defines.FILE:
+                client_file_list_relative.append(f.relative(path))
 
-        for i in range(len(client_file_list)):
-            client_file_list_dict[client_file_list[i]["filename"][len(path):]] = client_file_list[i]["modification_time"]
-            client_file_list[i] = client_file_list[i]["filename"][len(path):]
+        different_files_dc = []
 
         if fr == "client":
-            different = np.setdiff1d(client_file_list, server_file_list).tolist()
-            for i in range(len(different)):
-                orig_name = different[i]
-                if different[i][0] == "\\":
-                    different[i] = different[i][1:]
-                different[i] = {"filename": os.path.join(path, different[i]), 
-                "modification_time": client_file_list_dict[orig_name]}
+            different = np.setdiff1d(client_file_list_relative, server_file_list_relative).tolist()
+            for f in different:
+                abs_path = os.path.join(path, f)
+                different_files_dc.append(File(abs_path).to_dict())
         else:
             different = np.setdiff1d(server_file_list, client_file_list).tolist()
-            for i in range(len(different)):
-                orig_name = different[i]
-                if different[i][0] == "\\":
-                    different[i] = different[i][1:]
-                different[i] = {"filename": os.path.join(project["server_path"], different[i]), 
-                "modification_time": server_file_list_dict[orig_name]}
+            for f in different:
+                abs_path = os.path.join(project["server_path"], f)
+                different_files_dc.append(File(abs_path).to_dict())
 
         files_not_accepted = []
 
@@ -203,13 +207,14 @@ class Files:
             while progress.task == None:
                 time.sleep(1)
 
-        progress.task._disable_task_end_on_func_end = False
+        progress.task._disable_task_end_on_func_end = True
 
         if ui_handler != None:
-            dc = {"files": different, "files_not_accepted": files_not_accepted, "project": project, "task_id": progress.task.id, "from": fr}
+            dc = {"files": different_files_dc, "files_not_accepted": files_not_accepted, "project": project, "task_id": progress.task.id, "from": fr}
             ui_handler.action_send_files_dlg.emit(dc)
         
         return
+
 
     def _send_only_edited_files(self, project, progress, fr="client", ui_handler=None):
         cfg = self.env.config_manager
@@ -267,27 +272,9 @@ class Files:
         
         return
 
-    def get_files_creating_dirs(self, files, src_path, dest_path, progress=None):
-        cfg = self.env.config_manager
-        filepath = self.get_zipped_files(dest_path, files, progress=progress)
-        utils.unzip(zip=filepath, destination=src_path)
-
-        utils.delete_file(filepath)
-        
-    def send_files_creating_dirs(self, files, src_path, dest_path, progress=None):
-        dirs, _ignore = utils.get_dirs_files(src_path + "\\")
-
-        r = self.net_manager.request("/api/files/create_dirs", {"dirs": dirs, "path": dest_path})
-        if r.status_code != 200:
-            raise exceptions.REQUEST_FAILED(r.text)
-        
-        self.send_files(files, src_path, dest_path, progress)
-
-
     def _override_client_files(self, project, progress=None):
         cfg = self.env.config_manager
         path = os.path.join(cfg["path"]["projects_path"], project["name"])
-        print(path)
         if os.path.isdir(path):
             try: shutil.rmtree(path, ignore_errors=False, onerror=None)
             except: 
@@ -299,8 +286,10 @@ class Files:
         filepath = self.get_zipped_path(project["server_path"], progress=progress)
         #utils.unzip(zip=filepath, destination=cfg["path"]["projects_path"])
         #utils.delete_file(filepath)
+        data_file = self.env.file_manager.unzip_data_archive(os.path.join(filepath), path)
         
-        print(filepath)
+        for f in data_file["files"]:
+            self.env.file_manager.set_modification_time(os.path.join(path, f["path"]), f["date_modified"])
 
         projects = self.net_manager.audit.get_projects_sync_data()
         if str(project["id"]) in projects: # for some fucken reason2

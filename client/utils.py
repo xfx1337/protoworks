@@ -2,7 +2,6 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QApplication, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QSplitter, QLabel, QMessageBox
 
 import shutil
-import zipfile
 import os
 
 import uuid
@@ -63,3 +62,12 @@ def validate_run_requirements(env):
 
     if valid == False:
         message(out, tittle="Условия запуска")
+
+def relative(path, parent):
+    return os.path.join(parent, path)
+
+def remove_path(main, full):
+    if main[-1] == "\\":
+        return full[len(main):]
+    else:
+        return full[len(main)+1:]

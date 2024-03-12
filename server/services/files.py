@@ -20,6 +20,8 @@ config = Config("config.ini")
 from file_manager.file_manager import FileManager
 file_manager = FileManager()
 
+from file_manager.File import File
+
 from common import *
 
 from zipfile import ZipFile
@@ -57,7 +59,7 @@ def upload_data_zip(request):
             upload.write(chunk)
             bytes_left -= len(chunk)
 
-    data_file = utils.unzip_data_archive(os.path.join(config["path"]["temp_path"], obj["filename"]))
+    data_file = file_manager.unzip_data_archive(os.path.join(config["path"]["temp_path"], obj["filename"]))
 
     utils.delete_file(os.path.join(config["path"]["temp_path"], obj["filename"]))
 
@@ -134,6 +136,19 @@ def files_list(request):
 
     return {"files": files_to_send, "size": size_sum}, 200
 
+def files_list_for_project(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+
+    project_id = data["project_id"]
+
+    project_info = db.projects.get_project_info(int(project_id))
+    files = file_manager.get_files_list(project_info["server_path"])
+    files_dict = file_manager.files_list_to_dict_list(files)
+    return json.dumps({"files": files_dict}), 200
+
 def get_zipped_path(request):
     data =  parse_qs(unquote(request.data))
     src_path = data["path"][0]
@@ -142,6 +157,17 @@ def get_zipped_path(request):
         return "Токен не валиден", 403
 
     files_list = file_manager.get_files_list(src_path)
+
+    check_list_for_db = []
+    for f in files_list:
+        if f.f_type == FILE:
+            check_list_for_db.append(f.path)
+
+    ret = db.files.get_modification_time_for_list(check_list_for_db)
+    for f in files_list:
+        if f.path in ret:
+            f.date_modified = ret[f.path]
+
 
     path = file_manager.make_data_zip(files_list, relative=src_path)
 
@@ -163,30 +189,38 @@ def get_zipped_path(request):
 
 def get_zipped_files(request):
     data =  parse_qs(unquote(request.data))
-    files = data["files"]
-    path = data["path"][0]
     ret = db.users.valid_token(data["token"][0])
     if not ret:
         return "Токен не валиден", 403
-    
-    name = utils.get_unique_id()
 
-    file_path = os.path.join(config["path"]["temp_path"], name) + ".zip"
+    files_list_data = data["files"]
+    files_list = []
+    for f in files_list_data:
+        files_list.append(File(f))
 
-    utils.zip_files(files, src_path=path, dest_path=file_path)
+    check_list_for_db = []
+    for f in files_list:
+        check_list_for_db.append(f.path)
 
-    size = utils.get_file_size(file_path)
+    ret = db.files.get_modification_time_for_list(files_list)
+    for f in files_list:
+        if f.path in ret:
+            f.date_modified = ret[f.path]
+
+    path = file_manager.make_data_zip(files_list, relative=src_path)
+
+    size = utils.get_file_size(path)
 
     response = Response(
-        stream_with_context(utils._read_file_chunks(file_path)),
+        stream_with_context(utils._read_file_chunks(path)),
         headers={
-            'Content-Disposition': f'attachment; filename={name + ".zip"}',
+            'Content-Disposition': f'attachment; filename={path.split("/")[-1] + ".zip"}',
             'Content-Length': size
         }
     )
 
     @response.call_on_close
     def on_close():
-        utils.delete_file(file_path)
+        utils.delete_file(path)
 
     return response

@@ -35,3 +35,19 @@ class Files:
         self.cursor.execute(write_sql)
         self.connection.commit()
 
+    def get_modification_time_for_list(self, files):
+        files_str = ""
+        for f in files:
+            files_str += ("'" + f + "', ")
+        files_str = files_str[:-2]
+        read_sql = f"SELECT path, date_modified FROM files WHERE path in ({files_str})"
+        self.cursor.execute(read_sql)
+        content = self.cursor.fetchall()
+
+        if content == None:
+            return []
+        
+        dc = {}
+        for row in content:
+            dc[row[0]] = int(row[1])
+        return dc

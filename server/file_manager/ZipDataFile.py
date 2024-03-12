@@ -12,7 +12,7 @@ class ZipDataFile:
     def __init__(self, files=[], dirs=[], relative_path=None):
         self.files = files
         self.dirs = dirs
-        self.author = getpass.getuser()
+        self.author = "PROTOWORKS_SERVER"
         self.relative_path = relative_path
         self.FILE_LINKERS = {}
 
@@ -27,11 +27,15 @@ DATE_CREATED: {utils.time_by_unix(time.time())}
 MACHINE_NAME: {self.author}
         """
 
+    def add_list_end(self):
+        self.content += "\nLIST_END"
+
     def create_dirs_list(self):
         self.content += "\nDIRS_LIST:"
         for d in self.dirs:
             self.content += "\n"
             self.content += self._gen_dir_specs(d)
+        self.add_list_end()
     
     
     def create_files_list(self):
@@ -39,6 +43,7 @@ MACHINE_NAME: {self.author}
         for f in self.files:
             self.content += "\n"
             self.content += self._gen_file_specs(f)
+        self.add_list_end()
 
     def create_additional_data(self, data):
         self.content += "\n"
@@ -69,4 +74,4 @@ MACHINE_NAME: {self.author}
         return json.dumps(ret)
     
     def string(self):
-        return self.content
+        return self.content + "\n"
