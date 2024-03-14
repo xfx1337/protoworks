@@ -2,8 +2,7 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtCore import Signal, QObject
 from PySide6.QtWidgets import QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QLabel, QScrollArea, QMenu, QFileDialog, QApplication
 
-import os
-
+import os, shutil
 import utils
 
 from environment.environment import Environment
@@ -113,13 +112,20 @@ class ProjectListEntry(QDoubleLabel):
                 utils.message("Не удалось удалить проект")
                 return
 
+            dlg = QYesOrNoDialog("Хотите удалить файлы проекта на этом компьютере?")
+            dlg.exec()
+            if dlg.answer == True:
+                try: shutil.rmtree(os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]), ignore_errors=False, onerror=None)
+                except: utils.message("Не удалось удалить файлы проекта на этом компьютере")
+
             dlg = QYesOrNoDialog("Хотите удалить файлы проекта на сервере?")
             dlg.exec()
             if dlg.answer == True:
                 ret = env.net_manager.files.delete_path(self.project["server_path"])
                 if ret != 0:
-                    utils.message("Не удалось удалить файлы проекта")
+                    utils.message("Не удалось удалить файлы проекта на сервере")
                     return
+            
 
         if self._parent != None:
             self._parent.update_data()
@@ -158,7 +164,7 @@ class ProjectListEntry(QDoubleLabel):
                 func = lambda: env.net_manager.files.transfer_project_sources(
                     os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]), self.project, progress=dc["task"].progress, files_only=real_files)
             else:
-                func = lambda: env.net_manager.files.get_zipped_files(real_files, self.project, progress=dc["task"].progress)
+                func = lambda: env.net_manager.files.get_files_for_project(files=real_files, project=self.project, progress=dc["task"].progress)
 
             env.task_manager.replace_task(dc["task_id"], func)
         else:

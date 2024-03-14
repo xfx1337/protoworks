@@ -121,9 +121,9 @@ class Files:
         return r.json()["files"]
 
     def get_zipped_path(self, path, progress=None):
-        return self.get_zipped_files(path, progress=progress, by_path=True)
+        return self.get_zipped_files(path=path, progress=progress, by_path=True)
         
-    def get_zipped_files(self, path, files=None, progress=None, by_path=False):
+    def get_zipped_files(self, path=None, files=None, progress=None, by_path=False):
         cfg = self.env.config_manager
         local_filename = utils.get_unique_id()
         local_filename = os.path.join(cfg["path"]["temp_path"], local_filename) + ".zip"
@@ -132,7 +132,10 @@ class Files:
             data = {"path": path, "token": self.net_manager.token}
         else:
             url = "/api/files/get_zipped_files"
-            data = {"files": files, "token": self.net_manager.token}
+            if type(files[0]) == type(File()):
+                for i in range(len(files)):
+                    files[i] = files[i].path
+            data = {"files": files, "token": self.net_manager.token, "path": path}
         with requests.post(self.net_manager.host+url, stream=True, 
             data = data, 
             headers = {'Content-type':'application/json'}) as r:
@@ -196,7 +199,7 @@ class Files:
                 abs_path = os.path.join(path, f)
                 different_files_dc.append(File(abs_path).to_dict())
         else:
-            different = np.setdiff1d(server_file_list, client_file_list).tolist()
+            different = np.setdiff1d(server_file_list_relative, client_file_list_relative).tolist()
             for f in different:
                 abs_path = os.path.join(project["server_path"], f)
                 different_files_dc.append(File(abs_path).to_dict())
@@ -214,6 +217,22 @@ class Files:
             ui_handler.action_send_files_dlg.emit(dc)
         
         return
+
+    def get_files_for_project(self, files, project, progress=None):
+        local_filename = self.env.net_manager.files.get_zipped_files(files=files, path=project["server_path"], progress=progress)
+        path = os.path.join(self.env.config_manager["path"]["projects_path"], project["name"])
+        self.unzip_data_archive_register_update(local_filename, path, project=project)
+
+    def unzip_data_archive_register_update(self, zip_path, path, project):
+        data_file = self.env.file_manager.unzip_data_archive(os.path.join(zip_path), path)
+        
+        for f in data_file["files"]:
+            self.env.file_manager.set_modification_time(os.path.join(path, f["path"]), f["date_modified"])
+
+        projects = self.net_manager.audit.get_projects_sync_data()
+        if str(project["id"]) in projects: # for some fucken reason2
+            data = projects[str(project["id"])]
+            self.env.db.projects_sync.set_project_sync_date(project["id"], int(data["date"]), data["update_id"])
 
 
     def _send_only_edited_files(self, project, progress, fr="client", ui_handler=None):
@@ -286,16 +305,8 @@ class Files:
         filepath = self.get_zipped_path(project["server_path"], progress=progress)
         #utils.unzip(zip=filepath, destination=cfg["path"]["projects_path"])
         #utils.delete_file(filepath)
-        data_file = self.env.file_manager.unzip_data_archive(os.path.join(filepath), path)
         
-        for f in data_file["files"]:
-            self.env.file_manager.set_modification_time(os.path.join(path, f["path"]), f["date_modified"])
-
-        projects = self.net_manager.audit.get_projects_sync_data()
-        if str(project["id"]) in projects: # for some fucken reason2
-            data = projects[str(project["id"])]
-            self.env.db.projects_sync.set_project_sync_date(project["id"], int(data["date"]), data["update_id"])
-
+        self.unzip_data_archive_register_update(filepath, path, project=project)
         return 0
 
     

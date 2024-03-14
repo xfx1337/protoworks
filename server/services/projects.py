@@ -36,7 +36,8 @@ def create_project(request):
     
     path = os.path.join((config["path"]["projects_path"]), data["name"])
 
-    os.mkdir(path)
+    try: os.mkdir(path)
+    except: return "Не удалось создать папку на сервере с таким именем. Пожалуйста решите проблему вручную или назовите проект другим именем.", 500
 
     ret = db.projects.create_project(name=data["name"], 
         customer=data["customer"], 

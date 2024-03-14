@@ -63,6 +63,7 @@ MACHINE_NAME: {self.author}
 
     def _gen_file_specs(self, f):
         path = f.path
+        real_path = path
         if self.relative_path != None:
             real_path = f.relative(self.relative_path)
         

@@ -194,6 +194,7 @@ def get_zipped_files(request):
         return "Токен не валиден", 403
 
     files_list_data = data["files"]
+    relative_path = data["path"][0]
     files_list = []
     for f in files_list_data:
         files_list.append(File(f))
@@ -202,12 +203,12 @@ def get_zipped_files(request):
     for f in files_list:
         check_list_for_db.append(f.path)
 
-    ret = db.files.get_modification_time_for_list(files_list)
+    ret = db.files.get_modification_time_for_list(files_list_data)
     for f in files_list:
         if f.path in ret:
             f.date_modified = ret[f.path]
 
-    path = file_manager.make_data_zip(files_list, relative=src_path)
+    path = file_manager.make_data_zip(files_list, relative=relative_path)
 
     size = utils.get_file_size(path)
 

@@ -63,8 +63,11 @@ def validate_run_requirements(env):
     if valid == False:
         message(out, tittle="Условия запуска")
 
-def relative(path, parent):
-    return os.path.join(parent, path)
+def relative(self, path, main):
+    filename = path[len(main):]
+    if filename[0] == "\\":
+        filename = filename[1:]
+    return filename
 
 def remove_path(main, full):
     if main[-1] == "\\":

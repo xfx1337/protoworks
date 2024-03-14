@@ -50,6 +50,22 @@ class FileManager:
         
         return size
 
+    def get_dirs_for_file(self, file, relative=None):
+        dirs = {}
+        if relative != None:
+            dirs_f = utils.relative(file, relative).split("\\")[:-1]
+        else:
+            dirs_f = file.split("\\")[:-1]
+        for i in range(len(dirs_f)):
+            p = "\\".join(dirs_f[:i+1])
+            if p not in dirs:
+                if relative != None:
+                    dirs[os.path.join(relative, p)] = 1
+                else:
+                    dirs[p] = 1
+        
+        return list(dirs.keys())
+
     def make_data_zip(self, files_list, relative=None, additional_data_to_send=None):
         dirs = [f for f in files_list if f.f_type == FOLDER]
         files = [f for f in files_list if f.f_type == FILE]
@@ -57,7 +73,7 @@ class FileManager:
         data_file = ZipDataFile(files=files, dirs=dirs, relative_path=relative)
         data_file.create_entry()
         data_file.create_metadata()
-        data_file.create_dirs_list()
+        #data_file.create_dirs_list()
         data_file.create_files_list()
         if additional_data_to_send != None:
             data_file.create_additional_data(additional_data_to_send)
@@ -84,11 +100,20 @@ class FileManager:
             
             server_path = data["project"]["server_path"]
             
-            if "dirs" in data:
-                for d in data["dirs"]:
-                    os.mkdir(os.path.join(server_path, d))
-            
+            # if "dirs" in data:
+            #     for d in data["dirs"]:
+            #         os.mkdir(os.path.join(server_path, d))
             if "files" in data:
+                dirs = {}
+                for f in data["files"]:
+                    dirs_f = self.get_dirs_for_file(f["path"])
+                    for d in dirs_f:
+                        if d not in dirs:
+                            dirs[d] = 1
+                for d in dirs.keys():
+                    try: os.mkdir(os.path.join(server_path, d))
+                    except: pass
+                
                 for f in data["files"]:
                     archive.extract(f["arch_filename"], config["path"]["temp_path"])
                     os.rename(os.path.join(config["path"]["temp_path"], f["arch_filename"]), os.path.join(server_path, f["path"]))

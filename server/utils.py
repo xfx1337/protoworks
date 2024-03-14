@@ -82,3 +82,9 @@ def get_unique_id():
 
 def time_now():
     return int(time.time())
+
+def relative(self, path, main):
+    filename = path[len(main):]
+    if filename[0] == "\\":
+        filename = filename[1:]
+    return filename

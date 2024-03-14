@@ -54,7 +54,7 @@ class FileManager:
         data_file = ZipDataFile(files=files, dirs=dirs, relative_path=relative)
         data_file.create_entry()
         data_file.create_metadata()
-        data_file.create_dirs_list()
+        #data_file.create_dirs_list()
         data_file.create_files_list()
         if additional_data_to_send != None:
             data_file.create_additional_data(additional_data_to_send)
@@ -79,15 +79,43 @@ class FileManager:
                 data = str(data_file.read().decode('UTF-8'))
                 data = zip_data_file_decoder.decode(data)
             
-            if "dirs" in data:
-                for d in data["dirs"]:
-                    os.mkdir(os.path.join(extract_to, d))
+            # if "dirs" in data:
+            #     for d in data["dirs"]:
+            #         os.mkdir(os.path.join(extract_to, d))
             
             if "files" in data:
+                dirs = {}
+                for f in data["files"]:
+                    dirs_f = self.get_dirs_for_file(f["path"])
+                    for d in dirs_f:
+                        if d not in dirs:
+                            dirs[d] = 1
+                for d in dirs.keys():
+                    try: os.mkdir(os.path.join(extract_to, d))
+                    except: pass
+
                 for f in data["files"]:
                     archive.extract(f["arch_filename"], self.env.config_manager["path"]["temp_path"])
                     os.rename(os.path.join(self.env.config_manager["path"]["temp_path"], f["arch_filename"]), os.path.join(extract_to, f["path"]))
         return data
+
+    def get_dirs_for_file(self, file, relative=None):
+        dirs = {}
+        if relative != None:
+            dirs_f = utils.relative(file, relative).split("\\")[:-1]
+        else:
+            dirs_f = file.split("\\")[:-1]
+        for i in range(len(dirs_f)):
+            p = "\\".join(dirs_f[:i+1])
+            if p not in dirs:
+                if relative != None:
+                    dirs[os.path.join(relative, p)] = 1
+                else:
+                    dirs[p] = 1
+        
+        return list(dirs.keys())
+
+        
 
     def set_modification_time(self, path, time):
         os.utime(path, (time, time))
