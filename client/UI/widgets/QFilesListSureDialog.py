@@ -1,7 +1,7 @@
 import sys
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import QApplication, QDialog, QPushButton, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QDialogButtonBox, QStyleOption, QStyle
+from PySide6.QtWidgets import QApplication, QDialog, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QDialogButtonBox, QStyleOption, QStyle
 from PySide6 import QtGui
 
 from UI.widgets.QEasyScroll import QEasyScroll
@@ -19,16 +19,57 @@ class QFilesListSureDialog(QDialog):
     def __init__(self, files_yes, files_no, tittle, text, files_yes_label, files_no_label, path_dont_show=None, sure=None):
         super().__init__()
 
+        self.widget = QFilesListSureWidget(files_yes, files_no, text, files_yes_label, files_no_label, path_dont_show)
         self.sure = sure
 
+        self.layout = QVBoxLayout()
+
         self.setMinimumSize(QSize(700, 500))
+        self.setWindowTitle(tittle)
+        self.setWindowIcon(templates_manager.icons["proto"])
+
+        QBtn = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.cancel)
+
+        self.layout.addWidget(self.widget)
+        self.layout.addWidget(self.buttonBox)
+        self.setLayout(self.layout)
+
+
+
+    def closeEvent(self, event):
+        if self.sure != None:
+            if self.sure[0] == None:
+                self.sure[0] = False
+        event.accept()
+
+    def accept(self):
+        if self.sure != None:
+            self.sure[0] = True # fuck that's pointer system
+        self.close()
+    
+    def cancel(self):
+        if self.sure != None:
+            self.sure[0] = False
+        self.close()
+
+
+class QFilesListSureWidget(QWidget):
+    def __init__(self, files_yes, files_no, text, files_yes_label, files_no_label, path_dont_show=None):
+        super().__init__()
+
+        # self.sure = sure
+
+        # self.setMinimumSize(QSize(700, 500))
 
         self.path_dont_show = path_dont_show
         self.files_yes = files_yes
         self.files_no = files_no
 
-        self.setWindowTitle(tittle)
-        self.setWindowIcon(templates_manager.icons["proto"])
+        #self.setWindowTitle(tittle)
+        #self.setWindowIcon(templates_manager.icons["proto"])
 
         self.layout = QVBoxLayout()
 
@@ -67,12 +108,12 @@ class QFilesListSureDialog(QDialog):
 
         self.layout.addLayout(self.lower_layout)
 
-        QBtn = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
-        self.buttonBox = QDialogButtonBox(QBtn)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.cancel)
+        # QBtn = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        # self.buttonBox = QDialogButtonBox(QBtn)
+        # self.buttonBox.accepted.connect(self.accept)
+        # self.buttonBox.rejected.connect(self.cancel)
 
-        self.layout.addWidget(self.buttonBox)
+        # self.layout.addWidget(self.buttonBox)
 
         self.setLayout(self.layout)
 
@@ -222,18 +263,18 @@ class QFilesListSureDialog(QDialog):
 
         self.load_data()
     
-    def closeEvent(self, event):
-        if self.sure != None:
-            if self.sure[0] == None:
-                self.sure[0] = False
-        event.accept()
+    # def closeEvent(self, event):
+    #     if self.sure != None:
+    #         if self.sure[0] == None:
+    #             self.sure[0] = False
+    #     event.accept()
 
-    def accept(self):
-        if self.sure != None:
-            self.sure[0] = True # fuck that's pointer system
-        self.close()
+    # def accept(self):
+    #     if self.sure != None:
+    #         self.sure[0] = True # fuck that's pointer system
+    #     self.close()
     
-    def cancel(self):
-        if self.sure != None:
-            self.sure[0] = False
-        self.close()
+    # def cancel(self):
+    #     if self.sure != None:
+    #         self.sure[0] = False
+    #     self.close()

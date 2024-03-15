@@ -96,7 +96,12 @@ class FileManager:
 
                 for f in data["files"]:
                     archive.extract(f["arch_filename"], self.env.config_manager["path"]["temp_path"])
-                    os.rename(os.path.join(self.env.config_manager["path"]["temp_path"], f["arch_filename"]), os.path.join(extract_to, f["path"]))
+                    try:
+                        os.rename(os.path.join(self.env.config_manager["path"]["temp_path"], f["arch_filename"]), os.path.join(extract_to, f["path"]))
+                    except:
+                        self.delete_file(os.path.join(extract_to, f["path"]))
+                        os.rename(os.path.join(self.env.config_manager["path"]["temp_path"], f["arch_filename"]), os.path.join(extract_to, f["path"]))
+
         return data
 
     def get_dirs_for_file(self, file, relative=None):

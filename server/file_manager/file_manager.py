@@ -116,8 +116,11 @@ class FileManager:
                 
                 for f in data["files"]:
                     archive.extract(f["arch_filename"], config["path"]["temp_path"])
-                    os.rename(os.path.join(config["path"]["temp_path"], f["arch_filename"]), os.path.join(server_path, f["path"]))
-        
+                    try:
+                        os.rename(os.path.join(config["path"]["temp_path"], f["arch_filename"]), os.path.join(server_path, f["path"]))
+                    except:
+                        self.delete_file(os.path.join(server_path, f["path"]))
+                        os.rename(os.path.join(config["path"]["temp_path"], f["arch_filename"]), os.path.join(server_path, f["path"]))
         return data
 
     def scan_for_subdirs(self, dirname):

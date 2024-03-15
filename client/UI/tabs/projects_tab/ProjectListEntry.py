@@ -23,6 +23,8 @@ from UI.tabs.projects_tab.ProjectSyncDialog import ProjectSyncDialog
 from UI.widgets.QYesOrNoDialog import QYesOrNoDialog
 from UI.widgets.QFilesListSureDialog import QFilesListSureDialog
 
+from UI.tabs.projects_tab.ProjectSyncFilesChooseDialog import ProjectSyncFilesChooseDialog
+
 import environment.task_manager.statuses as statuses
 
 from environment.file_manager.File import File
@@ -88,7 +90,8 @@ class ProjectListEntry(QDoubleLabel):
         project_name = self.project["name"]
 
         ui_handler = SyncActionsUIHandlers()
-        ui_handler.action_send_files_dlg.connect(lambda dc: self._send_fiels_dlg_func(dc))
+        ui_handler.action_send_files_dlg.connect(lambda dc: self._send_files_dlg_func(dc))
+        ui_handler.action_sync_all_dlg.connect(lambda dc: self._sync_all_dlg_func(dc))
 
         task = env.task_manager.append_task( lambda: (env.net_manager.files.sync_by_action(self.project, action, progress=pro, ui_handler=ui_handler)),
         f"[{project_name}] {action_translation}", progress=pro)
@@ -134,7 +137,42 @@ class ProjectListEntry(QDoubleLabel):
         self.properties_window = ProjectPropertiesWidget(self.project) # without self. -> garbage collector will destroy window
         self.properties_window.show()
     
-    def _send_fiels_dlg_func(self, dc):
+    def _sync_all_dlg_func(self, dc):
+        files_send = dc["client_send"]
+        files_get = dc["server_send"]
+        dc["task"] = env.task_manager.tasks[dc["task_id"]]
+        dc["task"].set_status(statuses.WAITING)
+        sure = [None]
+
+        dlg = ProjectSyncFilesChooseDialog(files_send=files_send, files_get=files_get, 
+        path_dont_show_client = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]),
+        path_dont_show_server = self.project["server_path"], sure=sure)
+
+        dlg.exec()
+        real_files_send = []
+        real_files_get = []
+        for f in files_send:
+            real_files_send.append(File(f["path"]))
+        for f in files_get:
+            real_files_get.append(File(f["path"]))
+
+        if sure[0] == True:
+            if len(files_send) == 0 and len(files_get) == 0:
+                dc["task"].end_task(statuses.ENDED)
+                return
+            func_send = lambda: env.net_manager.files.transfer_project_sources(
+                os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]), self.project, progress=dc["task"].progress, files_only=real_files_send)
+            func_get = lambda: env.net_manager.files.get_files_for_project(files=real_files_get, project=self.project, progress=dc["task"].progress)
+
+            if len(real_files_send) == 0:
+                func_send = lambda: 1+1
+            if len(real_files_get) == 0:
+                func_get = lambda: 1+1
+            env.task_manager.replace_task(dc["task_id"], [func_send, func_get])
+        else:
+            dc["task"].end_task(statuses.CANCELED)
+
+    def _send_files_dlg_func(self, dc):
         files = dc["files"]
         fr = dc["from"]
         dc["task"] = env.task_manager.tasks[dc["task_id"]]
@@ -172,3 +210,4 @@ class ProjectListEntry(QDoubleLabel):
 
 class SyncActionsUIHandlers(QObject):
     action_send_files_dlg = Signal(dict)
+    action_sync_all_dlg = Signal(dict)

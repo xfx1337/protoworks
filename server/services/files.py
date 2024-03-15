@@ -146,18 +146,11 @@ def files_list_for_project(request):
 
     project_info = db.projects.get_project_info(int(project_id))
     files = file_manager.get_files_list(project_info["server_path"])
+    rework_date_modified(files)
     files_dict = file_manager.files_list_to_dict_list(files)
     return json.dumps({"files": files_dict}), 200
 
-def get_zipped_path(request):
-    data =  parse_qs(unquote(request.data))
-    src_path = data["path"][0]
-    ret = db.users.valid_token(data["token"][0])
-    if not ret:
-        return "Токен не валиден", 403
-
-    files_list = file_manager.get_files_list(src_path)
-
+def rework_date_modified(files_list):
     check_list_for_db = []
     for f in files_list:
         if f.f_type == FILE:
@@ -168,6 +161,16 @@ def get_zipped_path(request):
         if f.path in ret:
             f.date_modified = ret[f.path]
 
+def get_zipped_path(request):
+    data =  parse_qs(unquote(request.data))
+    src_path = data["path"][0]
+    ret = db.users.valid_token(data["token"][0])
+    if not ret:
+        return "Токен не валиден", 403
+
+    files_list = file_manager.get_files_list(src_path)
+
+    rework_date_modified(files_list)
 
     path = file_manager.make_data_zip(files_list, relative=src_path)
 

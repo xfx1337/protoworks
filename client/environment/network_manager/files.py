@@ -172,7 +172,68 @@ class Files:
         elif action == defines.ACTION_SEND_ONLY_EDITED_FILES_FROM_SERVER:
             self._send_only_edited_files(project, progress, "server", ui_handler)
 
-            return 0
+        elif action == defines.ACTION_SYNC_ALL_NEW_FILES:
+            self._sync_all(project, progress, ui_handler)
+        
+        return 0
+
+    def _sync_all(self, project, progress, ui_handler):
+        cfg = self.env.config_manager
+        path = os.path.join(cfg["path"]["projects_path"], project["name"])
+
+        server_file_list = self.request_files_list_for_project(project["id"])
+
+        server_file_list_relative = []
+        server_file_list_relative_dc = {}
+        for f in server_file_list:
+            if f["f_type"] == defines.FILE:
+                server_file_list_relative.append(utils.remove_path(project["server_path"], f["path"]))
+                server_file_list_relative_dc[utils.remove_path(project["server_path"], f["path"])] = File(JSON=f)
+
+        client_file_list = self.env.file_manager.get_files_list(path)
+        client_file_list_relative = []
+        client_file_list_relative_dc = {}
+        for f in client_file_list:
+            if f.f_type == defines.FILE:
+                client_file_list_relative.append(f.relative(path))
+                client_file_list_relative_dc[f.relative(path)] = f
+
+        different_from_client = np.setdiff1d(client_file_list_relative, server_file_list_relative).tolist()
+        different_from_server = np.setdiff1d(server_file_list_relative, client_file_list_relative).tolist()
+        
+
+        common = utils.common_elements(client_file_list_relative_dc.keys(), server_file_list_relative_dc.keys())
+        for i in range(len(common)):
+            if client_file_list_relative_dc[common[i]].date_modified > server_file_list_relative_dc[common[i]].date_modified:
+                different_from_client.append(client_file_list_relative_dc[common[i]].to_dict())
+            if server_file_list_relative_dc[common[i]].date_modified > client_file_list_relative_dc[common[i]].date_modified:
+                different_from_server.append(server_file_list_relative_dc[common[i]].to_dict())
+
+        different_from_client_dc = []
+        different_from_server_dc = []
+
+        for f in different_from_client:
+            abs_path = os.path.join(path, f)
+            different_from_client_dc.append(File(abs_path).to_dict())
+
+        for f in different_from_server:
+            abs_path = os.path.join(project["server_path"], f)
+            different_from_server_dc.append(File(abs_path).to_dict())
+
+        files_not_accepted = []
+
+        if progress != None:
+            while progress.task == None:
+                time.sleep(1)
+
+        progress.task._disable_task_end_on_func_end = True
+
+        if ui_handler != None:
+            dc = {"client_send": different_from_client_dc, "server_send": different_from_server_dc, 
+            "project": project, "task_id": progress.task.id}
+            ui_handler.action_sync_all_dlg.emit(dc)
+        
+        return
 
     def _send_only_new_files(self, project, progress, fr="client", ui_handler=None):
         cfg = self.env.config_manager
@@ -239,43 +300,34 @@ class Files:
         cfg = self.env.config_manager
         path = os.path.join(cfg["path"]["projects_path"], project["name"])
 
-        server_file_list = self.request_files_list(project["server_path"])
+        server_file_list = self.request_files_list_for_project(project["id"])
 
-        server_file_list_filenames = []
-        server_file_list_dict = {}
+        server_file_list_relative = {}
+        for f in server_file_list:
+            if f["f_type"] == defines.FILE:
+                p = utils.remove_path(project["server_path"], f["path"])
+                if p not in server_file_list_relative:
+                    server_file_list_relative[p] = File(JSON=f)
 
-        for i in range(len(server_file_list)):
-            server_file_list_filenames.append(server_file_list[i]["filename"])
-            server_file_list_dict[server_file_list[i]["filename"]] = server_file_list[i]["modification_time"]
-
-        client_file_list = utils.get_files_with_modification_time(path+"\\")
-        client_files_list_filenames = []
-        client_file_list_dict = {}
-        for i in range(len(client_file_list)):
-            client_file_list[i]["filename"] = client_file_list[i]["filename"][len(path):]
-            client_files_list_filenames.append(client_file_list[i]["filename"])
-            client_file_list_dict[client_file_list[i]["filename"]] = client_file_list[i]["modification_time"]
+        client_file_list = self.env.file_manager.get_files_list(path)
+        client_file_list_relative = {}
+        for f in client_file_list:
+            if f.f_type == defines.FILE:
+                p = f.relative(path)
+                if p not in client_file_list_relative:
+                    client_file_list_relative[p] = f
         
-        common = utils.common_elements(client_files_list_filenames, server_file_list_filenames)
-
+        common = utils.common_elements(client_file_list_relative.keys(), server_file_list_relative.keys())
         transfer = []
 
         if fr == "client":
             for i in range(len(common)):
-                if client_file_list_dict[common[i]] > server_file_list_dict[common[i]]:
-                    transfer.append(common[i])
-                    if transfer[-1][0] == "\\":
-                        transfer[-1] = transfer[-1][1:]
-                    transfer[-1] = {"filename": os.path.join(path, transfer[-1]), 
-                    "modification_time": client_file_list_dict[common[i]]}
+                if client_file_list_relative[common[i]].date_modified > server_file_list_relative[common[i]].date_modified:
+                    transfer.append(client_file_list_relative[common[i]].to_dict())
         else:
             for i in range(len(common)):
-                if server_file_list_dict[common[i]] > client_file_list_dict[common[i]]:
-                    transfer.append(common[i])
-                    if transfer[-1][0] == "\\":
-                        transfer[-1] = transfer[-1][1:]
-                    transfer[-1] = {"filename": os.path.join(project["server_path"], transfer[-1]), 
-                    "modification_time": server_file_list_dict[common[i]]}
+                if server_file_list_relative[common[i]].date_modified > client_file_list_relative[common[i]].date_modified:
+                    transfer.append(server_file_list_relative[common[i]].to_dict())
 
         files_not_accepted = []
 

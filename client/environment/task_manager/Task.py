@@ -61,6 +61,9 @@ class Task(QRunnable):
         self.manager.env.main_signals.task_status_changed.emit()
         self.signals.task_status_changed.emit()
 
+    def append_func(self, fn):
+        self.funcs.append(fn)
+
     def set_status(self, status=RUNNING):
         self.status = status
         self.signals.task_status_changed.emit()
