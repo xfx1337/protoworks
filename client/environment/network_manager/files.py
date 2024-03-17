@@ -76,7 +76,11 @@ class Files:
         data = self.send_data_zip(path, dest_path, progress=progress)
         return data
 
-    def after_project_update(self, project_id, data):
+    def after_project_update(self, project_id, data=None):
+
+        if data == None:
+            data = self.env.net_manager.audit.get_projects_sync_data()[str(project_id)]
+
         self.env.db.projects_sync.set_project_sync_date(project_id, int(data["date"]), data["update_id"])
         
         tab_type = type(self.env.main_window.get_tab_by_alias("projects")())

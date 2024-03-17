@@ -169,12 +169,14 @@ class ProjectListEntry(QDoubleLabel):
             if len(files_send) == 0 and len(files_get) and len(files_to_delete_from_server)== 0 and len(files_to_delete_from_client) == 0:
                 dc["task"].end_task(statuses.ENDED)
                 return
+
             func_send = lambda: env.net_manager.files.transfer_project_sources(
                 os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]), self.project, progress=dc["task"].progress, files_only=real_files_send)
             func_get = lambda: env.net_manager.files.get_files_for_project(files=real_files_get, project=self.project, progress=dc["task"].progress)
 
             func_del_from_server = lambda: env.net_manager.files.delete_files_of_project_from_server(self.project["id"], real_files_delete_from_server)
             func_del_from_client = lambda: env.file_manager.delete_files(real_files_delete_from_client)
+            func_check_update = lambda: env.net_manager.files.after_project_update(self.project["id"])
             if len(real_files_send) == 0:
                 func_send = lambda: 1+1
             if len(real_files_get) == 0:
@@ -184,7 +186,7 @@ class ProjectListEntry(QDoubleLabel):
             if len(real_files_delete_from_client) == 0:
                 func_del_from_client = lambda: 1+1
 
-            env.task_manager.replace_task(dc["task_id"], [func_send, func_get, func_del_from_server, func_del_from_client])
+            env.task_manager.replace_task(dc["task_id"], [func_send, func_get, func_del_from_server, func_del_from_client, func_check_update])
         else:
             dc["task"].end_task(statuses.CANCELED)
 
