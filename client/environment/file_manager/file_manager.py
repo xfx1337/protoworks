@@ -172,3 +172,7 @@ class FileManager:
             os.remove(file)
         elif type(file) == File():
             os.remove(file.path)
+        
+    def delete_files(self, files):
+        for f in files:
+            self.delete_file(f)
