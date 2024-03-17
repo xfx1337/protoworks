@@ -146,12 +146,12 @@ class ProjectListEntry(QDoubleLabel):
         dc["task"].set_status(statuses.WAITING)
         sure = [None]
 
-        dlg = ProjectSyncFilesChooseDialog(files_send=files_send, files_get=files_get, files_to_delete_from_client=files_to_delete_from_client,
+        self.dlg = ProjectSyncFilesChooseDialog(files_send=files_send, files_get=files_get, files_to_delete_from_client=files_to_delete_from_client,
         files_to_delete_from_server=files_to_delete_from_server,
         path_dont_show_client = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]),
         path_dont_show_server = self.project["server_path"], sure=sure)
 
-        dlg.exec()
+        self.dlg.exec()
         real_files_send = []
         real_files_get = []
         real_files_delete_from_server = []
@@ -198,14 +198,14 @@ class ProjectListEntry(QDoubleLabel):
         files_not_accepted = dc["files_not_accepted"]
         sure = [None]
         if fr == "client":
-            dlg = QFilesListSureDialog(files, files_not_accepted,
+            self.dlg = QFilesListSureDialog(files, files_not_accepted,
                 "Выбор файлов", "Выберите файлы, которые будет отправлены на сервер", "Файлы на отправку", "Проигнорировать файлы", 
                 path_dont_show=os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]), sure=sure)
         else:
-            dlg = QFilesListSureDialog(files, files_not_accepted,
+            self.dlg = QFilesListSureDialog(files, files_not_accepted,
             "Выбор файлов", "Выберите файлы, которые будут получены с сервера", "Файлы на получение", "Проигнорировать файлы",
             path_dont_show=self.project["server_path"], sure=sure)
-        dlg.exec()
+        self.dlg.exec()
 
         real_files = []
 
