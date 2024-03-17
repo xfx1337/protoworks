@@ -92,6 +92,41 @@ def delete_path(request):
 
     return "Удален", 200
 
+def delete_files(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+
+    project_id = int(data["project_id"])
+    project = db.projects.get_project_info(project_id)
+
+    deleted = []
+
+    for f in data["files"]:
+        try:
+            path = os.path.join(project["server_path"], f)
+            os.remove(path)
+            db.files.delete_file(path)
+            deleted.append(f)
+        except:
+            pass
+    
+    data_file = {"files": deleted}
+
+    data_file["update_id"] = str(utils.get_unique_id())
+    event = {
+        "event": "DELETE",
+        "info": str(json.dumps(data_file)),
+        "project_id": int(project_id)
+    }
+    update_info = db.audit.register_event(event)
+    update_info["update_id"] = data_file["update_id"]
+
+    file_manager.delete_empty_folders(project["server_path"])
+
+    return str(json.dumps(update_info)), 200
+
 def mkdir(request):
     data = request.get_json()
     ret = db.users.valid_token(data["token"])

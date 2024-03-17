@@ -21,6 +21,19 @@ class FileManager:
     def __init__(self):
         pass
     
+    def delete_empty_folders(self, root):
+        deleted = set()
+        for current_dir, subdirs, files in os.walk(root, topdown=False):
+            still_has_subdirs = False
+            for subdir in subdirs:
+                if os.path.join(current_dir, subdir) not in deleted:
+                    still_has_subdirs = True
+                    break
+        
+            if not any(files) and not still_has_subdirs:
+                os.rmdir(current_dir)
+                deleted.add(current_dir)
+
     def get_files_list(self, path):
         files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(path) for f in filenames]
         dirs = self.scan_for_subdirs(path)

@@ -1,7 +1,7 @@
 import sys
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import QApplication, QDialog, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QDialogButtonBox, QStyleOption, QStyle
+from PySide6.QtWidgets import QApplication, QDialog, QPushButton, QLabel, QWidget, QFrame, QLineEdit, QVBoxLayout, QHBoxLayout, QDialogButtonBox, QStyleOption, QStyle
 from PySide6 import QtGui
 
 from UI.widgets.QEasyScroll import QEasyScroll
@@ -56,7 +56,7 @@ class QFilesListSureDialog(QDialog):
         self.close()
 
 
-class QFilesListSureWidget(QWidget):
+class QFilesListSureWidget(QFrame):
     def __init__(self, files_yes, files_no, text, files_yes_label, files_no_label, path_dont_show=None):
         super().__init__()
 

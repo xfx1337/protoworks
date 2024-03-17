@@ -76,10 +76,8 @@ class Files:
         data = self.send_data_zip(path, dest_path, progress=progress)
         return data
 
-    def transfer_project_sources(self, src_path, project, progress=None, files_only=None):
-        project_data = ProjectData(project)
-        data = self.send_files(src_path, project["server_path"], progress=progress, additional_data_to_send=project_data, files_only=files_only)
-        self.env.db.projects_sync.set_project_sync_date(project["id"], int(data["date"]), data["update_id"])
+    def after_project_update(self, project_id, data):
+        self.env.db.projects_sync.set_project_sync_date(project_id, int(data["date"]), data["update_id"])
         
         tab_type = type(self.env.main_window.get_tab_by_alias("projects")())
         tabs = self.env.tab_manager.get_opened_tabs_by_type(tab_type)
@@ -87,11 +85,22 @@ class Files:
             tab = self.env.tab_manager.get_tab_by_id(t)
             tab.signals.update_tab.emit()
 
+    def transfer_project_sources(self, src_path, project, progress=None, files_only=None):
+        project_data = ProjectData(project)
+        data = self.send_files(src_path, project["server_path"], progress=progress, additional_data_to_send=project_data, files_only=files_only)
+        self.after_project_update(project["id"], data)
+
     def delete_path(self, path):
         r = self.net_manager.request("/api/files/delete_path", {"path": path})
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED("Не удалось удалить папку на сервере", no_message=True)
         return 0
+    
+    def delete_files_of_project_from_server(self, project_id, files):
+        r = self.net_manager.request("/api/files/delete_files_of_project", {"files": files, "project_id": project_id})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED("Не удалось удалить файлы на сервере", no_message=True)
+        self.after_project_update(project_id, json.loads(r.text))
 
     def mkdir(self, path):
         r = self.net_manager.request("/api/files/mkdir", {"path": path})
@@ -198,16 +207,41 @@ class Files:
                 client_file_list_relative.append(f.relative(path))
                 client_file_list_relative_dc[f.relative(path)] = f
 
+
         different_from_client = np.setdiff1d(client_file_list_relative, server_file_list_relative).tolist()
         different_from_server = np.setdiff1d(server_file_list_relative, client_file_list_relative).tolist()
-        
+
+        sync_data_client = self.env.db.projects_sync.get_projects_sync_data()
+        client_update_time = sync_data_client[project["id"]]["date"]
+        server_update_time = project["last_synced_server"]
+
+        delete_from_server_list_dc = []
+        delete_from_client_list_dc = []
+
+        i = 0
+        while i < len(different_from_server):
+            f = different_from_server[i]
+            if server_file_list_relative_dc[f].date_modified < client_update_time:
+                delete_from_server_list_dc.append(server_file_list_relative_dc[f].to_dict())
+                del different_from_server[i]
+            else:
+                i+=1
+
+        i = 0
+        while i < len(different_from_client):
+            f = different_from_client[i]
+            if client_file_list_relative_dc[f].date_modified <= server_update_time:
+                delete_from_client_list_dc.append(client_file_list_relative_dc[f].to_dict())
+                del different_from_client[i]
+            else:
+                i+=1
 
         common = utils.common_elements(client_file_list_relative_dc.keys(), server_file_list_relative_dc.keys())
         for i in range(len(common)):
             if client_file_list_relative_dc[common[i]].date_modified > server_file_list_relative_dc[common[i]].date_modified:
-                different_from_client.append(client_file_list_relative_dc[common[i]].to_dict())
+                different_from_client.append(common[i])
             if server_file_list_relative_dc[common[i]].date_modified > client_file_list_relative_dc[common[i]].date_modified:
-                different_from_server.append(server_file_list_relative_dc[common[i]].to_dict())
+                different_from_server.append(common[i])
 
         different_from_client_dc = []
         different_from_server_dc = []
@@ -229,7 +263,8 @@ class Files:
         progress.task._disable_task_end_on_func_end = True
 
         if ui_handler != None:
-            dc = {"client_send": different_from_client_dc, "server_send": different_from_server_dc, 
+            dc = {"client_send": different_from_client_dc, "server_send": different_from_server_dc,
+            "delete_from_server_request_list": delete_from_server_list_dc, "delete_from_client_request_list": delete_from_client_list_dc, 
             "project": project, "task_id": progress.task.id}
             ui_handler.action_sync_all_dlg.emit(dc)
         
@@ -294,7 +329,6 @@ class Files:
         if str(project["id"]) in projects: # for some fucken reason2
             data = projects[str(project["id"])]
             self.env.db.projects_sync.set_project_sync_date(project["id"], int(data["date"]), data["update_id"])
-
 
     def _send_only_edited_files(self, project, progress, fr="client", ui_handler=None):
         cfg = self.env.config_manager

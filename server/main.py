@@ -90,6 +90,10 @@ def upload_big():
 def delete_path():
     return services.files.delete_path(request)
 
+@app.route('/api/files/delete_files_of_project', methods= ['POST'])
+def delete_files():
+    return services.files.delete_files(request)
+
 @app.route('/api/files/mkdir', methods = ['POST'])
 def mkdir():
     return services.files.mkdir(request)

@@ -35,6 +35,11 @@ class Files:
         self.cursor.execute(write_sql)
         self.connection.commit()
 
+    def delete_file(self, file_path):
+        delete_sql = f"DELETE FROM files WHERE path = {file_path}"
+        self.cursor.execute(delete_sql)
+        self.connection.commit()
+        
     def get_modification_time_for_list(self, files):
         files_str = ""
         for f in files:

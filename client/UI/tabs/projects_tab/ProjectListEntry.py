@@ -140,35 +140,51 @@ class ProjectListEntry(QDoubleLabel):
     def _sync_all_dlg_func(self, dc):
         files_send = dc["client_send"]
         files_get = dc["server_send"]
+        files_to_delete_from_server = dc["delete_from_server_request_list"]
+        files_to_delete_from_client = dc["delete_from_client_request_list"]
         dc["task"] = env.task_manager.tasks[dc["task_id"]]
         dc["task"].set_status(statuses.WAITING)
         sure = [None]
 
-        dlg = ProjectSyncFilesChooseDialog(files_send=files_send, files_get=files_get, 
+        dlg = ProjectSyncFilesChooseDialog(files_send=files_send, files_get=files_get, files_to_delete_from_client=files_to_delete_from_client,
+        files_to_delete_from_server=files_to_delete_from_server,
         path_dont_show_client = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]),
         path_dont_show_server = self.project["server_path"], sure=sure)
 
         dlg.exec()
         real_files_send = []
         real_files_get = []
+        real_files_delete_from_server = []
+        real_files_delete_from_client = []
         for f in files_send:
             real_files_send.append(File(f["path"]))
         for f in files_get:
             real_files_get.append(File(f["path"]))
+        for f in files_to_delete_from_server:
+            real_files_delete_from_server.append(f["path"])
+        for f in files_to_delete_from_client:
+            real_files_delete_from_client.append(f["path"])
 
         if sure[0] == True:
-            if len(files_send) == 0 and len(files_get) == 0:
+            if len(files_send) == 0 and len(files_get) and len(files_to_delete_from_server)== 0 and len(files_to_delete_from_client) == 0:
                 dc["task"].end_task(statuses.ENDED)
                 return
             func_send = lambda: env.net_manager.files.transfer_project_sources(
                 os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]), self.project, progress=dc["task"].progress, files_only=real_files_send)
             func_get = lambda: env.net_manager.files.get_files_for_project(files=real_files_get, project=self.project, progress=dc["task"].progress)
 
+            func_del_from_server = lambda: env.net_manager.files.delete_files_of_project_from_server(self.project["id"], real_files_delete_from_server)
+            func_del_from_client = lambda: env.file_manager.delete_files(real_files_delete_from_client)
             if len(real_files_send) == 0:
                 func_send = lambda: 1+1
             if len(real_files_get) == 0:
                 func_get = lambda: 1+1
-            env.task_manager.replace_task(dc["task_id"], [func_send, func_get])
+            if len(real_files_delete_from_server) == 0:
+                func_del_from_server = lambda: 1+1
+            if len(real_files_delete_from_client) == 0:
+                func_del_from_client = lambda: 1+1
+
+            env.task_manager.replace_task(dc["task_id"], [func_send, func_get, func_del_from_server, func_del_from_client])
         else:
             dc["task"].end_task(statuses.CANCELED)
 

@@ -32,3 +32,12 @@ def combine(l):
         sheet += (l[i][:-1])
     sheet += "}"
     return sheet
+
+def adapt(l, fr, to):
+    if fr != None:
+        if fr != "" and fr in l:
+            return l.replace(fr, to)
+        else:
+            return to + " {" + l + "}"
+    else:
+        return to + " {" + l + "}"
