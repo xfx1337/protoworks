@@ -156,7 +156,9 @@ class FileManager:
         
         return subfolders
 
-        
+    def mkdir(self, path):
+        try: os.mkdir(path)
+        except: pass    
     
     def zip(self, src_path, dest_path):
         if src_path[-1] == "\\":

@@ -46,6 +46,7 @@ class Files:
         delete_sql = f"DELETE FROM files WHERE project_id={project_id}"
         self.cursor.execute(delete_sql)
         self.connection.commit()
+        self.db.files_logging.remove_logs(project_id)
 
 
     def get_modification_time_for_list(self, files):
@@ -53,6 +54,8 @@ class Files:
         for f in files:
             files_str += ("'" + f + "', ")
         files_str = files_str[:-2]
+        if len(files_str) < 1:
+            return {}
         read_sql = f"SELECT path, date_modified FROM files WHERE path in ({files_str})"
         self.cursor.execute(read_sql)
         content = self.cursor.fetchall()

@@ -35,6 +35,11 @@ class FilesLogging:
         self.cursor.execute(write_sql)
         self.connection.commit()
     
+    def remove_logs(self, project_id):
+        delete_sql = f"DELETE FROM files_logging WHERE project_id={project_id}"
+        self.cursor.execute(delete_sql)
+        self.connection.commit()
+
     def get(self, project_id):
         search_sql = f"SELECT * FROM files_logging WHERE project_id={project_id}"
         self.cursor.execute(search_sql)

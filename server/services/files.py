@@ -134,7 +134,10 @@ def delete_files(request):
     update_info["update_id"] = data_file["update_id"]
 
     file_manager.delete_empty_folders(project["server_path"])
-
+    try:
+        os.mkdir(project["server_path"])
+    except:
+        pass
     return str(json.dumps(update_info)), 200
 
 def mkdir(request):

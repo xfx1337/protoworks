@@ -177,6 +177,7 @@ class ProjectListEntry(QDoubleLabel):
             func_del_from_client = lambda: env.file_manager.delete_files(real_files_delete_from_client)
             func_check_update = lambda: env.net_manager.files.after_project_update(self.project["id"])
             func_fix_folders = lambda: env.file_manager.delete_empty_folders(os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]))
+            func_create_project_folder = lambda: env.file_manager.mkdir(os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]))
             if len(real_files_send) == 0:
                 func_send = lambda: 1+1
             if len(real_files_get) == 0:
@@ -186,7 +187,7 @@ class ProjectListEntry(QDoubleLabel):
             if len(real_files_delete_from_client) == 0:
                 func_del_from_client = lambda: 1+1
 
-            env.task_manager.replace_task(dc["task_id"], [func_send, func_get, func_del_from_server, func_del_from_client, func_check_update, func_fix_folders])
+            env.task_manager.replace_task(dc["task_id"], [func_send, func_get, func_del_from_server, func_del_from_client, func_check_update, func_fix_folders, func_create_project_folder])
         else:
             dc["task"].end_task(statuses.CANCELED)
 
