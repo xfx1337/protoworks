@@ -124,7 +124,11 @@ def get_projects_sync_data():
 
 @app.route('/api/files/delete_logs', methods = ['POST'])
 def delete_project_file_logs():
-    return services.files.delete_logs(requests)
+    return services.files.delete_logs(request)
+
+@app.route('/api/files/get_all_files_that_ever_created_in_project', methods=['POST'])
+def get_all_files_that_ever_created_in_project():
+    return services.files.get_all_files_that_ever_created_in_project(request)
 
 app.run(threaded=True, debug=False, host="0.0.0.0")
 CORS(app)

@@ -1,14 +1,14 @@
 from singleton import singleton
 
 @singleton
-class Files:
+class FilesLogging:
     def __init__(self, db):
         self.cursor = db.cursor
         self.connection = db.connection 
         self.db = db
         
         self.cursor.execute(f"""
-        CREATE TABLE IF NOT EXISTS files (
+        CREATE TABLE IF NOT EXISTS files_logging (
             id serial,
             path VARCHAR(255) PRIMARY KEY UNIQUE,
             date_modified INT,
@@ -20,7 +20,7 @@ class Files:
     def register_update(self, data):
         if len(data) < 1:
             return
-        write_sql = "INSERT INTO files (path, date_modified, file_size, project_id) VALUES "
+        write_sql = "INSERT INTO files_logging (path, date_modified, file_size, project_id) VALUES "
         for f in data:
             path = f["path"]
             date = int(f["date_modified"])
@@ -34,33 +34,12 @@ class Files:
         write_sql += "\nON CONFLICT (path) DO UPDATE SET date_modified=excluded.date_modified, file_size=excluded.file_size, project_id=excluded.project_id"
         self.cursor.execute(write_sql)
         self.connection.commit()
-
-        self.db.files_logging.register_update(data)
-
-    def delete_file(self, file_path):
-        delete_sql = f"DELETE FROM files WHERE path = '{file_path}'"
-        self.cursor.execute(delete_sql)
-        self.connection.commit()
-
-    def remove_logs(self, project_id):
-        delete_sql = f"DELETE FROM files WHERE project_id={project_id}"
-        self.cursor.execute(delete_sql)
-        self.connection.commit()
-
-
-    def get_modification_time_for_list(self, files):
-        files_str = ""
-        for f in files:
-            files_str += ("'" + f + "', ")
-        files_str = files_str[:-2]
-        read_sql = f"SELECT path, date_modified FROM files WHERE path in ({files_str})"
-        self.cursor.execute(read_sql)
+    
+    def get(self, project_id):
+        search_sql = f"SELECT * FROM files_logging WHERE project_id={project_id}"
         content = self.cursor.fetchall()
-
-        if content == None:
-            return []
-        
-        dc = {}
-        for row in content:
-            dc[row[0]] = int(row[1])
-        return dc
+        data = {"files": []}
+        for p in content:
+            file = {"id": p[0], "path": p[1], "date_modified": p[2], "file_size": p[3], "project_id": p[4]}
+            data["files"].append(file)
+        return data

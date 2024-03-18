@@ -81,7 +81,7 @@ class Files:
             data = self.env.net_manager.audit.get_projects_sync_data()[str(project_id)]
 
         self.env.db.projects_sync.set_project_sync_date(project_id, int(data["date"]), data["update_id"])
-        
+
         tab_type = type(self.env.main_window.get_tab_by_alias("projects")())
         tabs = self.env.tab_manager.get_opened_tabs_by_type(tab_type)
         for t in tabs:
@@ -225,12 +225,18 @@ class Files:
         delete_from_server_list_dc = []
         delete_from_client_list_dc = []
 
+        files_ever_created = self.get_all_files_that_ever_created_in_project(project["id"])
+        files_ever_created_relative = []
+        for f in files_ever_created:
+            files_ever_created_relative.append(utils.remove_path(project["server_path"], f["path"]))
+
         i = 0
         while i < len(different_from_server):
             f = different_from_server[i]
             if server_file_list_relative_dc[f].date_modified < client_update_time:
-                delete_from_server_list_dc.append(server_file_list_relative_dc[f].to_dict())
-                del different_from_server[i]
+                if f in files_ever_created_relative:
+                    delete_from_server_list_dc.append(server_file_list_relative_dc[f].to_dict())
+                    del different_from_server[i]
             else:
                 i+=1
 
@@ -259,7 +265,7 @@ class Files:
 
         for f in different_from_server:
             abs_path = os.path.join(project["server_path"], f)
-            different_from_server_dc.append(File(abs_path).to_dict())
+            different_from_server_dc.append(server_file_list_relative_dc[f].to_dict())
 
         files_not_accepted = []
 
@@ -284,10 +290,11 @@ class Files:
         server_file_list = self.request_files_list_for_project(project["id"])
 
         server_file_list_relative = []
+        server_file_list_relative_dc = {}
         for f in server_file_list:
             if f["f_type"] == defines.FILE:
                 server_file_list_relative.append(utils.remove_path(project["server_path"], f["path"]))
-
+                server_file_list_relative_dc[utils.remove_path(project["server_path"], f["path"])] = f
         client_file_list = self.env.file_manager.get_files_list(path)
         client_file_list_relative = []
         for f in client_file_list:
@@ -305,7 +312,7 @@ class Files:
             different = np.setdiff1d(server_file_list_relative, client_file_list_relative).tolist()
             for f in different:
                 abs_path = os.path.join(project["server_path"], f)
-                different_files_dc.append(File(abs_path).to_dict())
+                different_files_dc.append(server_file_list_relative_dc[f])
 
         files_not_accepted = []
 
@@ -320,6 +327,13 @@ class Files:
             ui_handler.action_send_files_dlg.emit(dc)
         
         return
+
+    def get_all_files_that_ever_created_in_project(self, project_id):
+         r = self.net_manager.request("/api/files/get_all_files_that_ever_created_in_project", {"project_id": project_id})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED("Не удалось получить дерево файлов сервера", no_message=True)
+
+        return r.json()["files"]
 
     def get_files_for_project(self, files, project, progress=None):
         local_filename = self.env.net_manager.files.get_zipped_files(files=files, path=project["server_path"], progress=progress)

@@ -147,6 +147,14 @@ def mkdir(request):
     except: return "Не удалось", 400
     return "Создана", 200
 
+def get_all_files_that_ever_created_in_project(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+    
+    return str(json.dumps(db.files_logging.get(int(data["project_id"])))), 200
+
 def dir_tree(request):
     data = request.get_json()
     ret = db.users.valid_token(data["token"])
