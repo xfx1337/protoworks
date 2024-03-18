@@ -133,7 +133,7 @@ class ProjectsWidget(QWidget, Tab):
         name = project["name"]
         pro = Progress()
         fn_send = lambda: (env.net_manager.files.transfer_project_sources(path, project, pro))
-        func_check_update = lambda: env.net_manager.files.after_project_update(self.project["id"])
+        func_check_update = lambda: env.net_manager.files.after_project_update(project_id)
         env.task_manager.append_task([fn_send, func_check_update],
         f"[{name}] Перенос файлов на сервер", progress=pro)
 

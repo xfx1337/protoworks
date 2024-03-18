@@ -234,11 +234,8 @@ class Files:
         while i < len(different_from_server):
             f = different_from_server[i]
             if server_file_list_relative_dc[f].date_modified < client_update_time:
-                if f in files_ever_created_relative:
-                    delete_from_server_list_dc.append(server_file_list_relative_dc[f].to_dict())
-                    del different_from_server[i]
-                else:
-                    i+=1
+                delete_from_server_list_dc.append(server_file_list_relative_dc[f].to_dict())
+                del different_from_server[i]
             else:
                 i+=1
 
@@ -246,8 +243,11 @@ class Files:
         while i < len(different_from_client):
             f = different_from_client[i]
             if client_file_list_relative_dc[f].date_modified <= server_update_time:
-                delete_from_client_list_dc.append(client_file_list_relative_dc[f].to_dict())
-                del different_from_client[i]
+                if f in files_ever_created_relative:
+                    delete_from_client_list_dc.append(client_file_list_relative_dc[f].to_dict())
+                    del different_from_client[i]
+                else:
+                    i+=1
             else:
                 i+=1
 

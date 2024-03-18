@@ -37,6 +37,7 @@ class FilesLogging:
     
     def get(self, project_id):
         search_sql = f"SELECT * FROM files_logging WHERE project_id={project_id}"
+        self.cursor.execute(search_sql)
         content = self.cursor.fetchall()
         data = {"files": []}
         for p in content:
