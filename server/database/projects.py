@@ -28,7 +28,6 @@ class Projects:
         SELECT * FROM projects
         """)
         content = self.cursor.fetchall()
-        print(content)
         data = {"projects": []}
         for p in content:
             project = {"id": p[0], "name": p[1], "customer": p[2], "description": p[3], "time_registered": p[4], "time_deadline": p[5], "status": p[6], "server_path": p[7]}

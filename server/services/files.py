@@ -92,6 +92,16 @@ def delete_path(request):
 
     return "Удален", 200
 
+def delete_logs(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+
+    project_id = int(data["project_id"])
+
+    db.files.remove_logs(project_id)
+
 def delete_files(request):
     data = request.get_json()
     ret = db.users.valid_token(data["token"])

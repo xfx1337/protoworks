@@ -77,7 +77,6 @@ class Files:
         return data
 
     def after_project_update(self, project_id, data=None):
-
         if data == None:
             data = self.env.net_manager.audit.get_projects_sync_data()[str(project_id)]
 
@@ -92,7 +91,6 @@ class Files:
     def transfer_project_sources(self, src_path, project, progress=None, files_only=None):
         project_data = ProjectData(project)
         data = self.send_files(src_path, project["server_path"], progress=progress, additional_data_to_send=project_data, files_only=files_only)
-        self.after_project_update(project["id"], data)
 
     def delete_path(self, path):
         r = self.net_manager.request("/api/files/delete_path", {"path": path})
@@ -104,7 +102,6 @@ class Files:
         r = self.net_manager.request("/api/files/delete_files_of_project", {"files": files, "project_id": project_id})
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED("Не удалось удалить файлы на сервере", no_message=True)
-        self.after_project_update(project_id, json.loads(r.text))
 
     def mkdir(self, path):
         r = self.net_manager.request("/api/files/mkdir", {"path": path})
@@ -162,13 +159,19 @@ class Files:
                             progress.signals.add.emit(len(chunk))
         return local_filename
 
+    def request_project_file_logs_deletion(project_id):
+        r = self.net_manager.request("/api/files/delete_logs", {"project_id": project_id})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED("Не удалось удалить логи файлов с сервера", no_message=True)
+
     def sync_by_action(self, project, action, progress=None, ui_handler=None):
         cfg = self.env.config_manager
         if action == defines.ACTION_OVERRIDE_SERVER_FILES:
             self.delete_path(project["server_path"])
             self.mkdir(project["server_path"])
-
+            self.request_project_file_logs_deletion(project["id"])
             self.transfer_project_sources(os.path.join(cfg["path"]["projects_path"], project["name"]), project, progress)
+            env.net_manager.files.after_project_update(project["id"])
         
         elif action == defines.ACTION_OVERRIDE_CLIENT_FILES:
             self._override_client_files(project, progress)
@@ -397,6 +400,7 @@ class Files:
         #utils.delete_file(filepath)
         
         self.unzip_data_archive_register_update(filepath, path, project=project)
+        func_check_update = lambda: env.net_manager.files.after_project_update(self.project["id"])
         return 0
 
     

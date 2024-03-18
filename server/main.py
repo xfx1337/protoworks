@@ -122,6 +122,10 @@ def get_zipped_files():
 def get_projects_sync_data():
     return services.audit.get_projects_sync_data(request)
 
+@app.route('/api/files/delete_logs', methods = ['POST'])
+def delete_project_file_logs():
+    return services.files.delete_logs(requests)
+
 app.run(threaded=True, debug=False, host="0.0.0.0")
 CORS(app)
 #socketio.run(app)
