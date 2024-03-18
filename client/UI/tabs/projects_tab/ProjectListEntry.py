@@ -3,6 +3,7 @@ from PySide6.QtCore import Signal, QObject
 from PySide6.QtWidgets import QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QLabel, QScrollArea, QMenu, QFileDialog, QApplication
 
 import os, shutil
+import subprocess
 import utils
 
 from environment.environment import Environment
@@ -24,6 +25,8 @@ from UI.widgets.QYesOrNoDialog import QYesOrNoDialog
 from UI.widgets.QFilesListSureDialog import QFilesListSureDialog
 
 from UI.tabs.projects_tab.ProjectSyncFilesChooseDialog import ProjectSyncFilesChooseDialog
+
+from UI.tabs.projects_tab.ProjectView import ProjectView
 
 import environment.task_manager.statuses as statuses
 
@@ -75,10 +78,12 @@ class ProjectListEntry(QDoubleLabel):
         self.menu.exec(event.globalPos())
 
     def open(self):
-        pass
+        self.view = ProjectView(self.project)
+        self.view.show()
     
     def open_dir(self):
-        pass
+        path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
+        subprocess.Popen(f'explorer "{path}"')
     
     def sync(self):
         dlg = ProjectSyncDialog(callback=self._start_sync_thread)
