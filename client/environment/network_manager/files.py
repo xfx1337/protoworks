@@ -159,7 +159,7 @@ class Files:
                             progress.signals.add.emit(len(chunk))
         return local_filename
 
-    def request_project_file_logs_deletion(project_id):
+    def request_project_file_logs_deletion(self, project_id):
         r = self.net_manager.request("/api/files/delete_logs", {"project_id": project_id})
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED("Не удалось удалить логи файлов с сервера", no_message=True)
