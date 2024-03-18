@@ -146,12 +146,12 @@ class ProjectListEntry(QDoubleLabel):
         dc["task"].set_status(statuses.WAITING)
         sure = [None]
 
-        self.dlg = ProjectSyncFilesChooseDialog(files_send=files_send, files_get=files_get, files_to_delete_from_client=files_to_delete_from_client,
+        dlg = ProjectSyncFilesChooseDialog(files_send=files_send, files_get=files_get, files_to_delete_from_client=files_to_delete_from_client,
         files_to_delete_from_server=files_to_delete_from_server,
         path_dont_show_client = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]),
         path_dont_show_server = self.project["server_path"], sure=sure)
 
-        self.dlg.exec()
+        dlg.exec()
         real_files_send = []
         real_files_get = []
         real_files_delete_from_server = []
@@ -198,14 +198,14 @@ class ProjectListEntry(QDoubleLabel):
         files_not_accepted = dc["files_not_accepted"]
         sure = [None]
         if fr == "client":
-            self.dlg = QFilesListSureDialog(files, files_not_accepted,
+            dlg = QFilesListSureDialog(files, files_not_accepted,
                 "Выбор файлов", "Выберите файлы, которые будет отправлены на сервер", "Файлы на отправку", "Проигнорировать файлы", 
                 path_dont_show=os.path.join(env.config_manager["path"]["projects_path"], self.project["name"]), sure=sure)
         else:
-            self.dlg = QFilesListSureDialog(files, files_not_accepted,
+            dlg = QFilesListSureDialog(files, files_not_accepted,
             "Выбор файлов", "Выберите файлы, которые будут получены с сервера", "Файлы на получение", "Проигнорировать файлы",
             path_dont_show=self.project["server_path"], sure=sure)
-        self.dlg.exec()
+        dlg.exec()
 
         real_files = []
 
@@ -222,7 +222,9 @@ class ProjectListEntry(QDoubleLabel):
             else:
                 func = lambda: env.net_manager.files.get_files_for_project(files=real_files, project=self.project, progress=dc["task"].progress)
 
-            env.task_manager.replace_task(dc["task_id"], func)
+            func_check_update = lambda: env.net_manager.files.after_project_update(self.project["id"])
+
+            env.task_manager.replace_task(dc["task_id"], [func, func_check_update])
         else:
             dc["task"].end_task(statuses.CANCELED)
 
