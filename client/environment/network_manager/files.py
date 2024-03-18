@@ -237,6 +237,8 @@ class Files:
                 if f in files_ever_created_relative:
                     delete_from_server_list_dc.append(server_file_list_relative_dc[f].to_dict())
                     del different_from_server[i]
+                else:
+                    i+=1
             else:
                 i+=1
 
@@ -274,7 +276,6 @@ class Files:
                 time.sleep(1)
 
         progress.task._disable_task_end_on_func_end = True
-
         if ui_handler != None:
             dc = {"client_send": different_from_client_dc, "server_send": different_from_server_dc,
             "delete_from_server_request_list": delete_from_server_list_dc, "delete_from_client_request_list": delete_from_client_list_dc, 
@@ -329,7 +330,7 @@ class Files:
         return
 
     def get_all_files_that_ever_created_in_project(self, project_id):
-         r = self.net_manager.request("/api/files/get_all_files_that_ever_created_in_project", {"project_id": project_id})
+        r = self.net_manager.request("/api/files/get_all_files_that_ever_created_in_project", {"project_id": project_id})
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED("Не удалось получить дерево файлов сервера", no_message=True)
 
