@@ -42,6 +42,6 @@ def paper_print(request):
     #win32api.ShellExecute(0, 'open', GSPRINT_PATH, '-ghostscript "'+GHOSTSCRIPT_PATH+'" -printer "'+currentprinter+f'" "{path_e}"', '.', 0)
     #win32api.ShellExecute(0, "print", path, None,  ".",  0)
 
-    command = "{} {}".format('sw_requirements\\PDFtoPrinter.exe', "'" + path + "'")
+    command = 'sw_requirements\\PDFtoPrinter.exe "' + path + '"' 
     subprocess.call(command, shell=True) 
     return "Отправлены на печать", 200
