@@ -2,7 +2,6 @@ import os, sys
 import socket
 import json
 
-
 from flask import Flask, jsonify, request, Response
 from flask_socketio import SocketIO, emit, send, Namespace
 from flask_socketio import ConnectionRefusedError
@@ -19,6 +18,7 @@ import services.projects
 import services.files
 import services.audit
 import services.materials
+import services.hardware
 
 sys.dont_write_bytecode = True # no pycache now
 
@@ -138,6 +138,10 @@ def add_materials():
 @app.route('/api/materials/get', methods=['POST'])
 def get_materials():
     return services.materials.get(request)
+
+@app.route('/api/hardware/paper_print', methods=['POST'])
+def paper_print():
+    return services.hardware.paper_print(request)
 
 app.run(threaded=True, debug=False, host="0.0.0.0")
 CORS(app)

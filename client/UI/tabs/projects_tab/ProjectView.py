@@ -192,8 +192,8 @@ class TechTaskMenu(QFrame):
         self.layout.addWidget(self.label)
 
         self.add_tt_btn = QInitButton("Добавить ТЗ", callback=self.add_tt_btn)
-        self.open_tt_btn = QInitButton("Открыть ТЗ", callback=self.open_tt)
-        self.print_tt_btn = QInitButton("Печать ТЗ", callback=self.print_tt)
+        self.open_tt_btn = QInitButton("Открыть ТЗ", callback=lambda: self.use_tt(callback_on_choose=self.open_tt_file))
+        self.print_tt_btn = QInitButton("Печать ТЗ на сервере", callback=lambda: self.use_tt(callback_on_choose=self.print_tt_file))
 
         self.layout.addWidget(self.add_tt_btn)
         self.layout.addWidget(self.open_tt_btn)
@@ -205,7 +205,7 @@ class TechTaskMenu(QFrame):
         self.ask_for_tt = QAskForFilesDialog("Выберите файлы, которые будут загружены как ТЗ", callback_yes=self.upload_tt_handler)
         self.ask_for_tt.show()
 
-    def open_tt(self):
+    def use_tt(self, callback_on_choose):
         local_path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
         local_doc_path = os.path.join(local_path, "МАТЕРИАЛЫ-PW")
         materials_on_pc = env.file_manager.get_files_list(local_doc_path)
@@ -222,7 +222,7 @@ class TechTaskMenu(QFrame):
         
         files = utils.common_elements(files_pc_relative, files_server_relative)
 
-        show_tt = QSelectOneFromList("Выберите из списка", files, callback=self.open_tt_file)
+        show_tt = QSelectOneFromList("Выберите из списка", files, callback=callback_on_choose)
         show_tt.show()
 
     def open_tt_file(self, rel_path):
@@ -231,8 +231,10 @@ class TechTaskMenu(QFrame):
         path = os.path.join(path, rel_path)
         os.startfile(path)
 
-    def print_tt(self):
-        pass
+    def print_tt_file(self, rel_path):
+        path = os.path.join(self.project["server_path"], "МАТЕРИАЛЫ-PW")
+        path = os.path.join(path, rel_path)
+        env.net_manager.hardware.paper_print(path)
     
     def upload_tt_handler(self, files):
         name = self.project["name"]

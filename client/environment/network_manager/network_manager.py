@@ -8,6 +8,7 @@ from environment.network_manager.files import Files
 from environment.network_manager.audit import Audit
 from environment.network_manager.parts import Parts
 from environment.network_manager.materials import Materials
+from environment.network_manager.hardware import Hardware
 
 import exceptions
 
@@ -27,6 +28,7 @@ class NetworkManager:
         self.audit = Audit(self)
         self.parts = Parts(self)
         self.materials = Materials(self)
+        self.hardware = Hardware(self)
 
         self._auto_login = False
 
