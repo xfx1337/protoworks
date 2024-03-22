@@ -2,6 +2,7 @@ from environment.task_manager.statuses import *
 
 import time
 import os, sys
+import traceback
 
 from PySide6.QtCore import QRunnable
 
@@ -24,6 +25,8 @@ class Task(QRunnable):
             self.funcs = funcs
         self.name = name
 
+        self.current_func = None
+
         self.id = utils.get_unique_id()
         self.status = RUNNING
         self._error = None
@@ -38,7 +41,9 @@ class Task(QRunnable):
 
     def run(self):
         try: 
-            for fn in self.funcs:
+            for i in range(len(self.funcs)):
+                fn = self.funcs[i]
+                self.current_func = fn
                 fn()
             if not self._disable_task_end_on_func_end:
                 self.end_task()
@@ -50,8 +55,9 @@ class Task(QRunnable):
             self.status = FAILED
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+
             self._error = e
-            self._error_data = {"exc_type": exc_type, "exc_obj": exc_obj, "exc_tb": exc_tb, "fname": fname}
+            self._error_data = {"exc_type": exc_type, "exc_obj": exc_obj, "exc_tb": exc_tb, "fname": fname, "func_name": self.current_func}
             self.end_task(FAILED)
         
 

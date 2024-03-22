@@ -8,7 +8,7 @@ from singleton import singleton
 from defines import *
 
 import utils
-import os
+import os, shutil
 
 from environment.file_manager.ZipDataFileDecoder import ZipDataFileDecoder
 zip_data_file_decoder = ZipDataFileDecoder()
@@ -27,10 +27,14 @@ class FileManager:
                     still_has_subdirs = True
                     break
         
-            if not any(files) and not still_has_subdirs:
+            if not any(files) and not still_has_subdirs and ("PW" not in current_dir):
+                print(current_dir)
                 os.rmdir(current_dir)
                 deleted.add(current_dir)
 
+    def copy_files(self, files):
+        for f in files.keys():
+            shutil.copy(f, files[f])
 
     def get_files_list(self, path):
         files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(path) for f in filenames]
@@ -133,8 +137,6 @@ class FileManager:
                     dirs[p] = 1
         
         return list(dirs.keys())
-
-        
 
     def set_modification_time(self, path, time):
         os.utime(path, (time, time))

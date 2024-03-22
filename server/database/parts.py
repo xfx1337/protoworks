@@ -9,11 +9,10 @@ class Parts:
         self.cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS parts (
             id serial PRIMARY KEY,
+            number INT,
             project_id INT,
             name VARCHAR(255),
-            parent VARCHAR(255),
-            count INT,
-            server_path VARCHAR(255),
-            dimensions VARCHAR(255)
+            count_need INT,
+            count_done INT
         )
         """)

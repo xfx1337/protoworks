@@ -9,6 +9,7 @@ from environment.config_manager.config_manager import Config
 from environment.templates_manager.templates_manager import TemplatesManager
 from environment.file_manager.file_manager import FileManager
 from environment.database.db import Database
+from environment.part_manager.part_manager import PartManager
 
 import utils
 
@@ -27,6 +28,8 @@ class Environment():
         self.file_manager = FileManager(self)
 
         self.db = Database()
+
+        self.part_manager = PartManager(self)
 
         self.main_signals = None
         self.main_window = None

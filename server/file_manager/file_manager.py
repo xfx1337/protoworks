@@ -21,6 +21,19 @@ class FileManager:
     def __init__(self):
         pass
     
+    def check_project_init(self, project):
+        path = os.path.join(self.env.config_manager["path"]["projects_path"], project["name"])
+        subdirs = self._scan_for_subdirs(path)
+        path = os.path.join(path, "ДЕТАЛИ-PW")
+        if path not in subdirs:
+            return False
+        return True
+    
+    def init_project_dir(self, project):
+        path = os.path.join(self.env.config_manager["path"]["projects_path"], project["name"])
+        path = os.path.join(path, "ДЕТАЛИ-PW")
+        os.mkdir(path)
+
     def delete_empty_folders(self, root):
         deleted = set()
         for current_dir, subdirs, files in os.walk(root, topdown=False):
@@ -30,7 +43,7 @@ class FileManager:
                     still_has_subdirs = True
                     break
         
-            if not any(files) and not still_has_subdirs:
+            if not any(files) and not still_has_subdirs and ("PW" not in current_dir):
                 os.rmdir(current_dir)
                 deleted.add(current_dir)
 

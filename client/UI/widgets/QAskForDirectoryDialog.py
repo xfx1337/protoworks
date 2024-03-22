@@ -7,7 +7,7 @@ from environment.templates_manager.templates_manager import TemplatesManager
 templates_manager = TemplatesManager()
 
 
-class QAskForFilesDialog(QDialog):
+class QAskForDirectoryDialog(QDialog):
     def __init__(self, text, project_id=None, callback_yes=None, callback_no=None):
         super().__init__()
 
@@ -17,7 +17,7 @@ class QAskForFilesDialog(QDialog):
 
         self.callback_no = callback_no
 
-        self.setWindowTitle("Загрузка файлов проекта")
+        self.setWindowTitle("Загрузка директории проекта")
         self.setWindowIcon(templates_manager.icons["proto"])
 
         self.layout = QVBoxLayout()
@@ -35,22 +35,20 @@ class QAskForFilesDialog(QDialog):
         self.setLayout(self.layout)
     
     def open_files(self):
-        fnames = QFileDialog.getOpenFileNames(
+        fname = QFileDialog.getExistingDirectory(
             self,
             "Выбрать",
             "ProtoWorks",
         )
-        fnames = fnames[0]
-        for i in range(len(fnames)):
-            if fnames[i] != "":
-                fnames[i] = fnames[i].replace("/", "\\")
+        if fname != "":
+            fname = fname.replace("/", "\\") + "\\"
 
         self.close()
         if self.callback_yes != None:
            if self.project_id != None:
-               self.callback_yes(fnames, self.project_id)
+               self.callback_yes(fname, self.project_id)
            else:
-               self.callback_yes(fnames)
+               self.callback_yes(fname)
         
     def close_and_check_callback(self):
         self.close()

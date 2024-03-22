@@ -18,6 +18,7 @@ import services.auth
 import services.projects
 import services.files
 import services.audit
+import services.materials
 
 sys.dont_write_bytecode = True # no pycache now
 
@@ -129,6 +130,14 @@ def delete_project_file_logs():
 @app.route('/api/files/get_all_files_that_ever_created_in_project', methods=['POST'])
 def get_all_files_that_ever_created_in_project():
     return services.files.get_all_files_that_ever_created_in_project(request)
+
+@app.route('/api/materials/add', methods=['POST'])
+def add_materials():
+    return services.materials.add_by_files(request)
+
+@app.route('/api/materials/get', methods=['POST'])
+def get_materials():
+    return services.materials.get(request)
 
 app.run(threaded=True, debug=False, host="0.0.0.0")
 CORS(app)

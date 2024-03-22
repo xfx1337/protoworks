@@ -56,15 +56,19 @@ MACHINE_NAME: {self.author}
 
     def _gen_dir_specs(self, d):
         path = d.path
-        if self.relative_path != None:
+        if self.relative_path != None and self.relative_path != "":
             path = d.relative(self.relative_path)
+        elif self.relative_path == "":
+            path = path.split("\\")[-1]
         
         return path
 
     def _gen_file_specs(self, f):
         path = f.path
-        if self.relative_path != None:
+        if self.relative_path != None and self.relative_path != "":
             real_path = f.relative(self.relative_path)
+        elif self.relative_path == "":
+            real_path = path.split("\\")[-1]
         
         ret = f.to_dict()
         ret["path"] = real_path

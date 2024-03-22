@@ -7,7 +7,7 @@
 # 6. Открыть аудит действий
 # 7. 
 
-import sys
+import os, sys, shutil
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QApplication, QPushButton, QHBoxLayout, QVBoxLayout, QFrame, QWidget, QSplitter, QLabel, QMessageBox, QCalendarWidget
@@ -17,12 +17,25 @@ from UI.widgets.QUserInput import QUserInput
 from UI.widgets.QInitButton import QInitButton
 from UI.widgets.QDoubleLabel import QDoubleLabel
 
+from UI.widgets.QAskForFilesDialog import QAskForFilesDialog
+from UI.widgets.QSelectOneFromList import QSelectOneFromList
+
 from UI.stylesheets import *
+
+from UI.part_manager.CreatePartView import CreatePartView
 
 from environment.environment import Environment
 env = Environment()
 
+from environment.task_manager.Progress import Progress
+
+from environment.file_manager.File import File
+
+from environment.file_manager.ZipDataAdditionalTypes import ProjectData
+
 import utils
+
+from defines import *
 
 import time
 from datetime import datetime as dt
@@ -74,7 +87,8 @@ class PartsManagerView(QFrame):
         self.setLayout(self.layout)
     
     def create_part(self):
-        pass
+        wnd = CreatePartView(self.project)
+        wnd.show()
 
     def create_part_array(self):
         pass
@@ -177,19 +191,73 @@ class TechTaskMenu(QFrame):
         self.label.setFixedSize(self.label.sizeHint())
         self.layout.addWidget(self.label)
 
+        self.add_tt_btn = QInitButton("Добавить ТЗ", callback=self.add_tt_btn)
         self.open_tt_btn = QInitButton("Открыть ТЗ", callback=self.open_tt)
         self.print_tt_btn = QInitButton("Печать ТЗ", callback=self.print_tt)
 
+        self.layout.addWidget(self.add_tt_btn)
         self.layout.addWidget(self.open_tt_btn)
         self.layout.addWidget(self.print_tt_btn)
 
         self.setLayout(self.layout)
 
+    def add_tt_btn(self):
+        self.ask_for_tt = QAskForFilesDialog("Выберите файлы, которые будут загружены как ТЗ", callback_yes=self.upload_tt_handler)
+        self.ask_for_tt.show()
+
     def open_tt(self):
-        pass
+        local_path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
+        local_doc_path = os.path.join(local_path, "МАТЕРИАЛЫ-PW")
+        materials_on_pc = env.file_manager.get_files_list(local_doc_path)
+        materials_server = env.net_manager.materials.get_materials(self.project["id"], MATERIAL_TECH_TASK)
+
+        server_doc_path = os.path.join(self.project["server_path"], "МАТЕРИАЛЫ-PW")
+
+        files_pc_relative = []
+        files_server_relative = []
+        for f in materials_on_pc:
+            files_pc_relative.append(f.relative(local_doc_path))
+        for f in materials_server:
+            files_server_relative.append(utils.remove_path(server_doc_path, f["path"]))
+        
+        files = utils.common_elements(files_pc_relative, files_server_relative)
+
+        show_tt = QSelectOneFromList("Выберите из списка", files, callback=self.open_tt_file)
+        show_tt.show()
+
+    def open_tt_file(self, rel_path):
+        path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
+        path = os.path.join(path, "МАТЕРИАЛЫ-PW")
+        path = os.path.join(path, rel_path)
+        os.startfile(path)
 
     def print_tt(self):
         pass
+    
+    def upload_tt_handler(self, files):
+        name = self.project["name"]
+        pro = Progress()
+        server_path = os.path.join(self.project["server_path"], "МАТЕРИАЛЫ-PW")
+        local_project_path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
+        local_path = os.path.join(local_project_path, "МАТЕРИАЛЫ-PW")
+
+
+        files_pathes_server = []
+        files_copy = {}
+        files_send = []
+        for f in files:
+            path_docs = os.path.join(local_path, f.split("\\")[-1])
+            files_send.append(path_docs)
+            files_copy[f] =  path_docs
+            files_pathes_server.append(os.path.join(server_path, f.split("\\")[-1]))
+
+        project_data = ProjectData(self.project)
+        fn_copy = lambda: (env.file_manager.copy_files(files_copy))
+        fn_send = lambda: (env.net_manager.files.send_files(local_project_path, server_path, pro, additional_data_to_send=project_data, files_only=files_send))
+        func_check_update = lambda: env.net_manager.files.after_project_update(self.project["id"])
+        func_add_materials = lambda: (env.net_manager.materials.add_materials_by_files(self.project["id"], files_pathes_server, MATERIAL_TECH_TASK))
+        env.task_manager.append_task([fn_copy, fn_send, func_add_materials, func_check_update],
+        f"[{name}] Отправка ТЗ на сервер", progress=pro)
 
 class TasksMenu(QFrame):
     def __init__(self, project):
@@ -287,6 +355,7 @@ class ProjectView(QWidget):
         self.setLayout(self.layout)
 
         QTimer.singleShot(10, self.center_window)
+
 
     def center_window(self):
         qr = self.frameGeometry()

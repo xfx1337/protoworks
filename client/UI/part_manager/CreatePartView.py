@@ -7,21 +7,23 @@ from PySide6.QtCore import QTimer
 from UI.widgets.QUserInput import QUserInput
 from UI.widgets.QInitButton import QInitButton
 
+from UI.widgets.QUserChooseSearch import QUserChooseSearch
+
 from environment.environment import Environment
 env = Environment()
 
 import utils
-import exceptions
 
 import time
 from datetime import datetime as dt
 
-class CreateProjectWidget(QWidget):
-    def __init__(self, callback=None):
+class CreatePartView(QWidget):
+    def __init__(self, project):
         super().__init__()
-        self.callback = callback
 
-        self.setWindowTitle(f"Создание проекта")
+        self.project = project
+
+        self.setWindowTitle(f"Создание детали")
         self.setWindowIcon(env.templates_manager.icons["proto"])
         self.setFixedSize(QSize(800, 500))
 
@@ -32,8 +34,9 @@ class CreateProjectWidget(QWidget):
         self.setLayout(self.layout)
 
         self.name_input = QUserInput("Название: ")
-        self.customer_input = QUserInput("Заказчик: ")
-        self.description_input = QUserInput("Описание: ")
+        parents = env.net_manager.get_parts(self.project["id"])
+        parents.append("Нет")
+        self.parent_input = QUserChooseSearch("Деталь принадлежит: ", parents)
 
         self.deadline_label = QLabel("Срок сдачи")
         self.deadline_input = QCalendarWidget()
@@ -63,14 +66,9 @@ class CreateProjectWidget(QWidget):
     
     def submit(self):
         deadline = time.mktime(self.deadline_input.selectedDate().toPython().timetuple())
-        try:
-            ret = env.net_manager.projects.create(name=self.name_input.get_input(), 
-                customer=self.customer_input.get_input(), 
-                deadline=deadline, description=self.description_input.get_input())
-            utils.message("После завершения процесса создания проекта и его загрузки на сервер, пожалуйста, перезапишите локальную директорию.", tittle="Уведомление")
-        except Exception as e:
-            utils.message(e.message)
-
+        ret = env.net_manager.projects.create(name=self.name_input.get_input(), 
+            customer=self.customer_input.get_input(), 
+            deadline=deadline, description=self.description_input.get_input())
         self.close()
         if self.callback != None:
             self.callback(ret) # project id

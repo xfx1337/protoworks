@@ -58,12 +58,17 @@ class Files:
         return data
 
     def send_files(self, src_path, dest_path, progress=None, filter_func=None, additional_data_to_send=None, files_only=None):
-        files_list = self.env.file_manager.get_files_list(src_path)
+        files_list = []
+        if src_path != "" and src_path != None:
+            files_list = self.env.file_manager.get_files_list(src_path)
 
         if filter_func != None:
             files_list = filter_func(files_list)
         if files_only:
             files_list = files_only
+            for i in range(len(files_list)):
+                if type(files_list[i]) == str:
+                    files_list[i] = File(files_list[i])
 
         progress.full = self.env.file_manager.get_list_size(files_list)
 
@@ -409,6 +414,8 @@ class Files:
                 return
         
         os.mkdir(path)
+        os.mkdir(os.path.join(path, "ДЕТАЛИ-PW"))
+        os.mkdir(os.path.join(path, "МАТЕРИАЛЫ-PW"))
 
         filepath = self.get_zipped_path(project["server_path"], progress=progress)
         #utils.unzip(zip=filepath, destination=cfg["path"]["projects_path"])

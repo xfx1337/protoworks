@@ -6,6 +6,8 @@ from environment.network_manager.auth import Auth
 from environment.network_manager.projects import Projects
 from environment.network_manager.files import Files
 from environment.network_manager.audit import Audit
+from environment.network_manager.parts import Parts
+from environment.network_manager.materials import Materials
 
 import exceptions
 
@@ -23,6 +25,8 @@ class NetworkManager:
         self.projects = Projects(self)
         self.files = Files(self)
         self.audit = Audit(self)
+        self.parts = Parts(self)
+        self.materials = Materials(self)
 
         self._auto_login = False
 

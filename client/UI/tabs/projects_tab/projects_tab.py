@@ -23,7 +23,7 @@ import defines
 from UI.tabs.projects_tab.ProjectListEntry import ProjectListEntry
 from UI.tabs.projects_tab.ProjectPropertiesWidget import ProjectPropertiesWidget
 
-from UI.widgets.QAskForFilesDialog import QAskForFilesDialog
+from UI.widgets.QAskForDirectoryDialog import QAskForDirectoryDialog
 
 from UI.widgets.QEasyScroll import QEasyScroll
 
@@ -124,7 +124,7 @@ class ProjectsWidget(QWidget, Tab):
         project = env.net_manager.projects.get_project_info(project_id)
         try: os.mkdir(os.path.join(env.config_manager["path"]["projects_path"], project["name"])) # it can be already created
         except: pass 
-        self.dlg = QAskForFilesDialog("Если у вас есть файлы проекта, загрузите их", project_id=project_id,
+        self.dlg = QAskForDirectoryDialog("Если у вас есть файлы проекта, загрузите их", project_id=project_id,
         callback_yes=self._transfer_files_processing, callback_no = self.update_data) # only with .self or it will be destroyed
         self.dlg.show()
 
