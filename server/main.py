@@ -147,6 +147,18 @@ def paper_print():
 def get_project_audit():
     return services.audit.get_project_audit(request)
 
+@app.route('/api/hardware/paper_print_from_upload', methods=['POST'])
+def paper_print_from_upload():
+    return services.hardware.paper_print_from_upload(request)
+
+@app.route('/api/hardware/paper_print_text', methods=['POST'])
+def paper_print_text():
+    return services.hardware.paper_print_text(request)
+
+@app.route('/api/hardware/paper_print_get_jobs', methods=['POST'])
+def paper_print_get_jobs():
+    return services.hardware.paper_print_get_jobs(request)
+
 app.run(threaded=True, debug=False, host="0.0.0.0")
 CORS(app)
 #socketio.run(app)

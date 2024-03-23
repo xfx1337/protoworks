@@ -10,10 +10,12 @@ env = Environment()
 
 
 class QPathInput(QWidget):
-    def __init__(self, text, path=None, parent=None):
+    def __init__(self, text, path=None, parent=None, selected_callback=None):
         super().__init__()
         self.path = path
         self._parent = parent
+
+        self.selected_callback = selected_callback
 
         self.layout = QHBoxLayout()
         
@@ -39,5 +41,8 @@ class QPathInput(QWidget):
         if fname != "": 
             self.path = fname.replace("/", "\\") + "\\"
             self.path_button.setText(self.path)
+        
+            if self.selected_callback != None:
+                self.selected_callback()
             
         

@@ -14,6 +14,8 @@ import UI.stylesheets as stylesheets
 from UI.widgets.QInitButton import QInitButton
 from UI.widgets.QSystemBar import QSystemBar
 
+from UI.paper_print.PaperPrintMenu import PaperPrintMenu
+
 import utils
 
 class MainWindow(QMainWindow):
@@ -51,6 +53,10 @@ class MainWindow(QMainWindow):
 
         app_bar_layout_right.addWidget(
             QInitButton("Закрыть все вкладки", callback=lambda: env.tab_manager.close_all())
+        )
+
+        app_bar_layout_right.addWidget(
+            QInitButton("Принтер по бумаге", callback=self.open_paper_print_menu)
         )
 
         app_bar_layout_right.addWidget(
@@ -108,6 +114,9 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(main_container)
 
+    def open_paper_print_menu(self):
+        self.wnd = PaperPrintMenu()
+        self.wnd.show()
 
     def on_operation_change(self):
         tasks = env.task_manager.get_tasks()

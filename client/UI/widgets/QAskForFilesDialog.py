@@ -8,7 +8,7 @@ templates_manager = TemplatesManager()
 
 
 class QAskForFilesDialog(QDialog):
-    def __init__(self, text, project_id=None, callback_yes=None, callback_no=None):
+    def __init__(self, text, project_id=None, callback_yes=None, callback_no=None, only_one_file=False):
         super().__init__()
 
         self.project_id = project_id
@@ -17,7 +17,9 @@ class QAskForFilesDialog(QDialog):
 
         self.callback_no = callback_no
 
-        self.setWindowTitle("Загрузка файлов проекта")
+        self.only_one_file = only_one_file
+
+        self.setWindowTitle("Загрузка файлов")
         self.setWindowIcon(templates_manager.icons["proto"])
 
         self.layout = QVBoxLayout()
@@ -35,15 +37,27 @@ class QAskForFilesDialog(QDialog):
         self.setLayout(self.layout)
     
     def open_files(self):
-        fnames = QFileDialog.getOpenFileNames(
-            self,
-            "Выбрать",
-            "ProtoWorks",
-        )
+        if not self.only_one_file:
+            fnames = QFileDialog.getOpenFileNames(
+                self,
+                "Выбрать",
+                "ProtoWorks",
+            )
+        else:
+            fnames = QFileDialog.getOpenFileName(
+                self,
+                "Выбрать",
+                "ProtoWorks",
+            )
+            
+            
         fnames = fnames[0]
-        for i in range(len(fnames)):
-            if fnames[i] != "":
-                fnames[i] = fnames[i].replace("/", "\\")
+        if not self.only_one_file:
+            for i in range(len(fnames)):
+                if fnames[i] != "":
+                    fnames[i] = fnames[i].replace("/", "\\")
+        else:
+            fnames = fnames.replace("/", "\\")
 
         self.close()
         if self.callback_yes != None:

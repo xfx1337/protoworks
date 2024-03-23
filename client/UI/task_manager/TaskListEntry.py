@@ -71,7 +71,7 @@ class TaskListEntry(QWidget):
         
     def mousePressEvent(self, QMouseEvent):
         info = f"""Задача: {self.task.name} 
-        Статус: {TASK_STATUS_TRANSLATIONS[self.task.status]}
+        Состояние: {TASK_STATUS_TRANSLATIONS[self.task.status]}
         id: {self.task.id}
         Ошибка: {"Нет" if self.task._error == None else (str(repr(self.task._error)) + " Функция: " + str(self.task._error_data["func_name"]))}
         Время запуска: {utils.time_by_unix(self.task.time_started)}

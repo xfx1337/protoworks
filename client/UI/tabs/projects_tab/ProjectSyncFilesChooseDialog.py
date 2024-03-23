@@ -44,7 +44,7 @@ class ProjectSyncFilesChooseDialog(QDialog):
         self.main_layout = QHBoxLayout()
         self.layout = QVBoxLayout()
 
-        self.setMinimumSize(QSize(1500, 700))
+        #self.setMinimumSize(QSize(1500, 700))
         self.setWindowTitle("Синхронизация")
         self.setWindowIcon(templates_manager.icons["proto"])
 

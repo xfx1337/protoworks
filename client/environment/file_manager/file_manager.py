@@ -35,8 +35,16 @@ class FileManager:
         for f in files.keys():
             shutil.copy(f, files[f])
 
-    def get_files_list(self, path):
-        files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(path) for f in filenames]
+    def get_files_list(self, path, files_only=False, subdirs=True):
+        if subdirs:
+            files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(path) for f in filenames]
+        else:
+            files = []
+            for (dirpath, dirnames, filenames) in os.walk(path):
+                for f in filenames:
+                    files.append(os.path.join(path, f))
+                break
+
         dirs = self.scan_for_subdirs(path)
 
         files_list = []
@@ -45,8 +53,9 @@ class FileManager:
             f_c = File(path=f, f_type=FILE)
             files_list.append(f_c)
 
-        for f in dirs:
-            files_list.append(f)
+        if not files_only:
+            for f in dirs:
+                files_list.append(f)
 
         return files_list
     
