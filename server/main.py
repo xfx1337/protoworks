@@ -143,6 +143,10 @@ def get_materials():
 def paper_print():
     return services.hardware.paper_print(request)
 
+@app.route('/api/audit/get_project_audit', methods=['POST'])
+def get_project_audit():
+    return services.audit.get_project_audit(request)
+
 app.run(threaded=True, debug=False, host="0.0.0.0")
 CORS(app)
 #socketio.run(app)

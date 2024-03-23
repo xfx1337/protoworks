@@ -50,3 +50,16 @@ class Audit:
             if info != None:
                 ret["projects"][int(info[-1])] = {"date": int(info[-3]), "update_id": str(json.loads(info[-2])["update_id"])}
         return ret
+    
+    def get_project_audit(self, project_id, from_id, to_id):
+        sql = f"SELECT * FROM audit WHERE project_id={project_id} ORDER BY date DESC LIMIT {to_id-from_id} OFFSET {from_id}"
+
+        ret = {"audit": []}
+
+        self.cursor.execute(sql)
+        info = self.cursor.fetchall()
+        if info != None:
+            for a in info:
+                ret["audit"].append({"event": a[1], "date": a[2], "info": a[3]})
+        
+        return ret

@@ -60,6 +60,23 @@ FILE_FORMATS = {
     PDF: "pdf"
 }
 
+DETAILS_DIRS = [
+    "stl - Печать",
+    "m3d - КОМПАС-Деталь",
+    "a3d - КОМАПС-Сборка",
+    "frw - КОМПАС-Фрагмент",
+    "NOT_IMPLEMENTED - КОМПАС-Чертёж",
+    "gcode - Принтер-Код",
+    "nc - Фрезер-Код",
+    "sldprt - SOLID-Деталь",
+    "sldasm - SOLID-Сборка",
+    "NOT_IMPLEMENTED - SOLID-Фрагмент",
+    "NOT_IMPLEMENTED - SOLID-Чертёж",
+    "dxf - Графика",
+    "dwg - Графика",
+    "pdf - Документация", 
+]
+
 DXF_VERSION = {
     "AC1015": "AutoCAD 2000",
     "AC1018": "AutoCAD 2004",

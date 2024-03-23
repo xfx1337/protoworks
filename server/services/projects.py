@@ -40,6 +40,11 @@ def create_project(request):
         os.mkdir(path)
         os.mkdir(os.path.join(path, "ДЕТАЛИ-PW"))
         os.mkdir(os.path.join(path, "МАТЕРИАЛЫ-PW"))
+
+        path_details = os.path.join(path, "ДЕТАЛИ-PW")
+        for d in DETAILS_DIRS:
+            os.mkdir(os.path.join(path_details, d))
+
     except: return "Не удалось создать папку на сервере с таким именем. Пожалуйста решите проблему вручную или назовите проект другим именем.", 500
 
 

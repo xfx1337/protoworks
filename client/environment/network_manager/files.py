@@ -417,6 +417,10 @@ class Files:
         os.mkdir(os.path.join(path, "ДЕТАЛИ-PW"))
         os.mkdir(os.path.join(path, "МАТЕРИАЛЫ-PW"))
 
+        path_details = os.path.join(path, "ДЕТАЛИ-PW")
+        for d in defines.DETAILS_DIRS:
+            os.mkdir(os.path.join(path_details, d))
+
         filepath = self.get_zipped_path(project["server_path"], progress=progress)
         #utils.unzip(zip=filepath, destination=cfg["path"]["projects_path"])
         #utils.delete_file(filepath)

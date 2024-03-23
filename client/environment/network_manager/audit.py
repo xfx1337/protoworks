@@ -16,3 +16,10 @@ class Audit:
             raise exceptions.REQUEST_FAILED(r.text)
 
         return r.json()["projects"]
+    
+    def get_project_audit(self, project_id, from_id, to_id):
+        r = self.net_manager.request("/api/audit/get_project_audit", {"project_id": project_id, "from_id": from_id, "to_id": to_id})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)
+
+        return r.json()["audit"]

@@ -43,7 +43,7 @@ class FileManager:
                     still_has_subdirs = True
                     break
         
-            if not any(files) and not still_has_subdirs and ("PW" not in current_dir):
+            if not any(files) and not still_has_subdirs and ("PW" not in current_dir) and (current_dir.split("\\")[-1] not in DETAILS_DIRS):
                 os.rmdir(current_dir)
                 deleted.add(current_dir)
 

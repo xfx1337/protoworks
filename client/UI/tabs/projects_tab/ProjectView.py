@@ -19,10 +19,12 @@ from UI.widgets.QDoubleLabel import QDoubleLabel
 
 from UI.widgets.QAskForFilesDialog import QAskForFilesDialog
 from UI.widgets.QSelectOneFromList import QSelectOneFromList
+from UI.widgets.QEasyScroll import QEasyScroll
 
 from UI.stylesheets import *
 
 from UI.part_manager.CreatePartView import CreatePartView
+from UI.part_manager.AutoPartsCreationWindow import AutoPartsCreationWindow
 
 from environment.environment import Environment
 env = Environment()
@@ -78,17 +80,23 @@ class PartsManagerView(QFrame):
 
         self.create_part = QInitButton("Создать деталь", callback=self.create_part)
         self.create_part_array = QInitButton("Создать множество деталей", callback=self.create_part_array)
+        self.auto_create_parts_btn = QInitButton("Автоматическое обновление списка деталей", callback=self.auto_create_parts)
         self.view_parts = QInitButton("Список деталей", callback=self.view_parts)
 
         self.layout.addWidget(self.create_part)
         self.layout.addWidget(self.create_part_array)
+        self.layout.addWidget(self.auto_create_parts_btn)
         self.layout.addWidget(self.view_parts)
 
         self.setLayout(self.layout)
     
+    def auto_create_parts(self):
+        self.wnd_a = AutoPartsCreationWindow(self.project)
+        self.wnd_a.show()
+
     def create_part(self):
-        wnd = CreatePartView(self.project)
-        wnd.show()
+        self.wnd_c = CreatePartView(self.project)
+        self.wnd_c.show()
 
     def create_part_array(self):
         pass
@@ -261,35 +269,12 @@ class TechTaskMenu(QFrame):
         env.task_manager.append_task([fn_copy, fn_send, func_add_materials, func_check_update],
         f"[{name}] Отправка ТЗ на сервер", progress=pro)
 
-class TasksMenu(QFrame):
-    def __init__(self, project):
-        super().__init__()
-        self.project = project
-
-        self.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
-        self.setLineWidth(1)
-
-        self.layout = QVBoxLayout()
-
-        self.label = QLabel("Задачи")
-        self.label.setFixedSize(self.label.sizeHint())
-        self.layout.addWidget(self.label)
-
-        self.create_task_btn = QInitButton("Создать задачу", callback=self.create_task)
-        self.tasks_list = QLabel("Здесь будет список задач")
-
-        self.layout.addWidget(self.create_task_btn)
-        self.layout.addWidget(self.tasks_list)
-
-        self.setLayout(self.layout)
-
-    def create_task(self):
-        pass
-
 class AuditView(QFrame):
     def __init__(self, project):
         super().__init__()
         self.project = project
+
+        self.entries = []
 
         self.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
         self.setLineWidth(1)
@@ -300,16 +285,37 @@ class AuditView(QFrame):
         self.label.setFixedSize(self.label.sizeHint())
         self.layout.addWidget(self.label)
 
-        self.open_audit = QInitButton("Открыть аудит действий", callback=self.open_audit)
-        self.audit_list = QLabel("Здесь будет укороченный список аудита")
+        self.audit_info = QLabel("Последние 10 событий")
+        self.scrollable = QEasyScroll()
+        self.scrollWidgetLayout = self.scrollable.scrollWidgetLayout
+        self.scrollWidget = self.scrollable.scrollWidget
 
-        self.layout.addWidget(self.open_audit)
-        self.layout.addWidget(self.audit_list)
+        self.layout.addWidget(self.audit_info)
+        self.layout.addWidget(self.scrollable)
 
         self.setLayout(self.layout)
 
-    def open_audit(self):
-        pass
+        self.update_data()
+
+    def update_data(self):
+        data = env.net_manager.audit.get_project_audit(self.project["id"], 0, 10)
+
+        for e in self.entries:
+            if e.parent() != None:
+                e.setParent(None)
+
+        self.entries = []
+
+        events = sorted(data, key=lambda key: (-key["date"]))
+
+        for i in range(len(events)):
+            event = events[i]
+            e = QDoubleLabel(event["event"], utils.time_by_unix(event["date"]))
+            self.scrollWidgetLayout.insertWidget(i, e)
+            self.scrollWidgetLayout.setAlignment(e, Qt.AlignmentFlag.AlignTop)
+
+            self.entries.append(e)
+
 
 class ProjectView(QWidget):
     def __init__(self, project):
@@ -344,9 +350,6 @@ class ProjectView(QWidget):
 
         self.tt_menu = TechTaskMenu(self.project)
         self.r_side.addWidget(self.tt_menu)
-
-        self.tasks_menu = TasksMenu(self.project)
-        self.r_side.addWidget(self.tasks_menu)
 
         self.audit_menu = AuditView(self.project)
         self.r_side.addWidget(self.audit_menu)
