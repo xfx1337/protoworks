@@ -52,3 +52,8 @@ class Hardware:
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)
         return json.loads(r.text)["jobs"]
+    
+    def cancel_paper_printing(self, jobId):
+        r = self.net_manager.request("/api/hardware/cancel_paper_printing", {"JobId": jobId})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)

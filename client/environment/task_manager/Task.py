@@ -64,7 +64,8 @@ class Task(QRunnable):
     def end_task(self, status=ENDED):
         self.status = status
         self.time_stopped = time.time()
-        self.manager.env.main_signals.task_status_changed.emit()
+        if self.manager != None:
+            self.manager.env.main_signals.task_status_changed.emit()
         self.signals.task_status_changed.emit()
 
     def append_func(self, fn):

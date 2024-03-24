@@ -159,6 +159,10 @@ def paper_print_text():
 def paper_print_get_jobs():
     return services.hardware.paper_print_get_jobs(request)
 
+@app.route('/api/hardware/cancel_paper_printing', methods=['POST'])
+def cancel_paper_printing():
+    return services.hardware.cancel_paper_printing(request)
+
 app.run(threaded=True, debug=False, host="0.0.0.0")
 CORS(app)
 #socketio.run(app)

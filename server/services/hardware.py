@@ -106,3 +106,19 @@ def paper_print_get_jobs(request):
         jobs[i]["Submitted"] = jobs[i]["Submitted"].now().timestamp()
 
     return json.dumps({"jobs": jobs}), 200
+
+def cancel_paper_printing(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+
+    job_id = data["JobId"]
+    phandle = win32print.OpenPrinter(win32print.GetDefaultPrinter())
+
+    try:
+        win32print.SetJob(phandle, job_id, 0, None, win32print.JOB_CONTROL_DELETE)
+    except:
+        pass
+
+    return "Отменено", 200

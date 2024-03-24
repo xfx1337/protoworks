@@ -27,11 +27,19 @@ statuses = {
     1024: "Принтер ожидает помощи"
 }
 
+from environment.environment import Environment
+env = Environment()
 
 class PrintListEntry(QWidget):
     def __init__(self, job):
         super().__init__()
-    
+        self.job = job
+
+        self.context_menu = QMenu(self)
+        cancel = self.context_menu.addAction("Отменить")
+        cancel.triggered.connect(self.cancel)
+
+
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
 
@@ -52,3 +60,9 @@ class PrintListEntry(QWidget):
         self.layout.addWidget(self.pages)
         self.layout.addWidget(self.date)
 
+    def contextMenuEvent(self, event):
+        self.context_menu.exec(event.globalPos())
+
+    def cancel(self):
+        env.task_manager.run_silent_task(lambda: env.net_manager.hardware.cancel_paper_printing(self.job["JobId"]))
+        

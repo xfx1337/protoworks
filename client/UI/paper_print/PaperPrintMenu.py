@@ -96,18 +96,22 @@ class PaperPrintMenu(QWidget):
 
 
     def cancel_all(self):
-        pass
+        env.task_manager.run_silent_task(self.cancel_all_thread)
+
+    def cancel_all_thread(self):
+        jobs = env.net_manager.hardware.paper_print_get_jobs()
+        for j in jobs:
+            env.net_manager.hardware.cancel_paper_printing(j["JobId"])
 
     def print_text(self):
         self.dlg_ask_for_text = QAreUSureDialog("Введите текст на отправку")
         self.dlg_ask_for_text.exec()
         text = self.dlg_ask_for_text.input.text()
-        env.net_manager.hardware.paper_print_text(text)
+        env.task_manager.run_silent_task(lambda: env.net_manager.hardware.paper_print_text(text))
 
     def print(self):
         self.dlg_ask_for_file = QAskForFilesDialog("Выберите файл на печать", callback_yes=self.print_handler_file, only_one_file=True)
         self.dlg_ask_for_file.show()
 
     def print_handler_file(self, file):
-        env.net_manager.hardware.paper_print_from_file(file)
-        
+        env.task_manager.run_silent_task(lambda: env.net_manager.hardware.paper_print_from_file(file))

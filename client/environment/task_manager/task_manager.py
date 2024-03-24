@@ -16,6 +16,10 @@ class TaskManager(QThreadPool):
         super().__init__()
         self.tasks = {}
 
+    def run_silent_task(self, fn):
+        task = Task(fn, "silent")
+        self.start(task)
+
     def append_task(self, fn, name, progress=None):
         task = Task(fn, name, manager=self, progress=progress)
         self.tasks[task.id] = task 
