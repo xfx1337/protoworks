@@ -5,6 +5,7 @@ import utils
 from PySide6.QtCore import QThreadPool
 
 from environment.task_manager.Task import Task
+from environment.task_manager.Process import Process
 from environment.task_manager.Progress import Progress
 
 from environment.task_manager.statuses import *
@@ -15,6 +16,11 @@ class TaskManager(QThreadPool):
         self.env = env
         super().__init__()
         self.tasks = {}
+
+    def create_process(self, control_func, name, progress=None):
+        process = Process(control_func, name, manager=self, progress=progress)
+        self.tasks[process.id] = process 
+        self.start(process)
 
     def run_silent_task(self, fn):
         task = Task(fn, "silent")

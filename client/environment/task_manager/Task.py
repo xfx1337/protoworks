@@ -13,11 +13,12 @@ import exceptions
 from environment.task_manager.TaskSignals import TaskSignals
 
 class Task(QRunnable):
-    def __init__(self, funcs, name, manager=None, progress=None):
+    def __init__(self, funcs, name, manager=None, progress=None, process_child=False):
         super(Task, self).__init__()
 
         self.manager = manager
         self.progress = progress
+        self.process_child = process_child
 
         if type(funcs) != list:
             self.funcs = [funcs]

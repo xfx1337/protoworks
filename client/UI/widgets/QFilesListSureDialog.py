@@ -128,10 +128,12 @@ class QFilesListSureWidget(QFrame):
     def load_data(self):
         for e in self.files_yes_entries:
             if e.parent != None:
-                e.setParent(None)
+                try: e.setParent(None)
+                except: pass
         for e in self.files_no_entries:
             if e.parent != None:
-                e.setParent(None)
+                try: e.setParent(None)
+                except: pass
 
         self.files_yes_entries = []
         self.files_no_entries = []

@@ -4,11 +4,14 @@ from PySide6.QtWidgets import QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QL
 from UI.widgets.QClickableLabel import QClickableLabel
 
 from UI.task_manager.TaskListEntry import TaskListEntry
+from UI.task_manager.ProcessListEntry import ProcessListEntry
 
 import UI.stylesheets
 
 from environment.environment import Environment
 env = Environment()
+
+from environment.task_manager.Process import Process
 
 class TaskManagerWindow(QWidget):
     def __init__(self):
@@ -59,10 +62,27 @@ class TaskManagerWindow(QWidget):
 
         tasks_sorted = sorted(tasks, key=lambda key: (tasks[key].time_started, tasks[key].name))
 
+        j = 0
+
+        for i in range(len(tasks_sorted)):
+            process = tasks[tasks_sorted[i]]
+            if type(process) == Process:
+                p = ProcessListEntry(process, parent=self)
+                self.scrollWidgetLayout.insertWidget(i, p)
+                self.scrollWidgetLayout.setAlignment(p, Qt.AlignmentFlag.AlignTop)
+
+                self.tasks_entries.append(p)
+
+            j = i
+
         for i in range(len(tasks_sorted)):
             task = tasks[tasks_sorted[i]]
-            p = TaskListEntry(task, parent=self)
-            self.scrollWidgetLayout.insertWidget(i, p)
-            self.scrollWidgetLayout.setAlignment(p, Qt.AlignmentFlag.AlignTop)
+            if type(task) != Process:
+                if (not task.process_child):
+                    p = TaskListEntry(task, parent=self)
+                    self.scrollWidgetLayout.insertWidget(j+1, p)
+                    self.scrollWidgetLayout.setAlignment(p, Qt.AlignmentFlag.AlignTop)
 
-            self.tasks_entries.append(p)
+                    self.tasks_entries.append(p)
+                    
+                    j += 1

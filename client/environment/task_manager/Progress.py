@@ -3,6 +3,7 @@ from environment.task_manager.ProgressSignals import ProgressSignals
 class Progress:
     def __init__(self):
         self.task = None
+        self.progress = None
         self.full = 0
         self.current = 0
         self._cancel_task = False
@@ -21,3 +22,6 @@ class Progress:
     
     def set_task(self, task):
         self.task = task
+    
+    def set_progress(self, progress):
+        self.progress = progress

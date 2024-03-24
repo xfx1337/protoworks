@@ -12,6 +12,10 @@ QPushButton::border {
 }
 """
 
+COLORS_TO_HTML_RGB = {
+    "red": "rgb(255,0,0)"
+}
+
 YELLOW_HIGHLIGHT = "QLabel {color: rgb(216, 235, 9); }"
 BLACK_HIGHLIGHT = "QLabel {color: rgb(128,128,128)}"
 GREEN_HIGHLIGHT = "QLabel {color: rgb(0, 128, 0)}"
