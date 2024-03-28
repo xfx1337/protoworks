@@ -60,8 +60,8 @@ class Process(QRunnable):
         task = Task(fn, "silent")
         self.manager.start(task)
 
-    def append_task(self, fn, name, progress=None):
-        task = Task(fn, name, manager=self.manager, progress=progress, process_child=self)
+    def append_task(self, fn, name, progress=None, _disable_task_end_on_func_end=False):
+        task = Task(fn, name, manager=self.manager, progress=progress, process_child=self, _disable_task_end_on_func_end=_disable_task_end_on_func_end)
         self.tasks[task.id] = task 
         self.manager.start(task)
 

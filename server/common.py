@@ -52,7 +52,7 @@ FILE_FORMATS = {
     KOMPAS_PART: "m3d",
     KOMPAS_ASSEMBLY: "a3d",
     KOMPAS_FRAGMENT: "frw",
-    KOMPAS_BLUEPRINT: "NOT_IMPLEMENTED",
+    KOMPAS_BLUEPRINT: "cdw",
     GCODE: "gcode",
     SOLID_PART: "sldprt",
     SOLID_ASSEMBLY: "sldasm",
@@ -63,3 +63,8 @@ FILE_FORMATS = {
     PDF: "pdf",
     NC: "nc"
 }
+
+PART_DONE = 0
+PART_PRODUCTION = 1
+PART_IN_WORK = 2
+PART_IN_COORDINATION = 3

@@ -68,8 +68,13 @@ class FileManager:
     def get_list_size(self, files_list):
         size = 0
         for f in files_list:
-            if f.f_type == FILE:
-                size += f.size
+            if type(f) == type(File()):
+                if f.f_type == FILE:
+                    size += f.size
+            elif type(f) == type({}):
+                size += os.path.getsize(f["path"])
+            else:
+                size += os.path.getsize(f)
         
         return size
 

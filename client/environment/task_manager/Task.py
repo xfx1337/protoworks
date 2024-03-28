@@ -13,7 +13,7 @@ import exceptions
 from environment.task_manager.TaskSignals import TaskSignals
 
 class Task(QRunnable):
-    def __init__(self, funcs, name, manager=None, progress=None, process_child=False):
+    def __init__(self, funcs, name, manager=None, progress=None, process_child=False, _disable_task_end_on_func_end=False):
         super(Task, self).__init__()
 
         self.manager = manager
@@ -36,7 +36,7 @@ class Task(QRunnable):
         self.time_started = time.time()
         self.time_stopped = None
 
-        self._disable_task_end_on_func_end = False
+        self._disable_task_end_on_func_end = _disable_task_end_on_func_end
 
         self.signals = TaskSignals()
 
