@@ -76,7 +76,8 @@ class NewPartsTab(QFrame):
 
         self.files = []
 
-        self.folder_select = QPathInput("Директория исходных файлов", selected_callback = self.update_path)
+        open_path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
+        self.folder_select = QPathInput("Директория исходных файлов", selected_callback = self.update_path, open_path=open_path, limit_dir=open_path)
         self.subfolders_enable_cb = QCheckBox("Проверять подпапки на наличие файлов")
         self.subfolders_enable_cb.setChecked(True)
         self.subfolders_enable_cb.toggled.connect(self.update_path)

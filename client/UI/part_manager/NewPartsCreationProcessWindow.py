@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QL
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QShortcut, QKeySequence
 
-from PySide6.QtCore import Signal, QObject
+from PySide6.QtCore import Signal, QObject, QTimer
 
 import utils
 from defines import *
@@ -20,6 +20,7 @@ from UI.widgets.QEasyScroll import QEasyScroll
 
 from UI.widgets.QTerminalScreenOutput import QTerminalScreenOutput
 
+from UI.task_manager.TaskListEntry import TaskListEntry
 
 from environment.templates_manager.templates_manager import TemplatesManager
 templates_manager = TemplatesManager()
@@ -36,6 +37,8 @@ import os, time, shutil
 from UI.part_manager.donut_joke import *
 
 from environment.convert_manager.convert_ways import CONVERT_WAYS
+
+from UI.part_manager.UpdateSignal import UpdateSignal
 
 class HiddenDonut(QWidget):
     def __init__(self):
@@ -71,7 +74,7 @@ class NewPartsCreationProcessWindow(QWidget):
 
         self.setWindowTitle(f"[Процесс] Автоматическое создание деталей")
         self.setWindowIcon(templates_manager.icons["proto"])
-        self.setFixedSize(QSize(700, 500))
+        self.setFixedSize(QSize(1280, 720))
 
         self.hLayout = QHBoxLayout()
         self.layout = QVBoxLayout()
@@ -101,18 +104,18 @@ class NewPartsCreationProcessWindow(QWidget):
         self.left_frame_layout.addWidget(self.label_copy)
         self.left_frame_layout.addWidget(self.progress_bar_copy)
 
-        label_name = "Конвертирование деталей"
-        if not self.settings["auto_convert_all_formats"]:
-            label_name = "[Отключено] Конвертирование деталей"
+        # label_name = "Конвертирование деталей"
+        # if not self.settings["auto_convert_all_formats"]:
+        #     label_name = "[Отключено] Конвертирование деталей"
 
-        self.label_convert = QLabel(label_name)
-        self.progress_bar_convert = QProgressBar(self)
-        self.progress_bar_convert.setValue(0)
-        if not self.settings["auto_convert_all_formats"]:
-            self.progress_bar_convert.setValue(100)
+        # self.label_convert = QLabel(label_name)
+        # self.progress_bar_convert = QProgressBar(self)
+        # self.progress_bar_convert.setValue(0)
+        # if not self.settings["auto_convert_all_formats"]:
+        #     self.progress_bar_convert.setValue(100)
 
-        self.left_frame_layout.addWidget(self.label_convert)
-        self.left_frame_layout.addWidget(self.progress_bar_convert)
+        #self.left_frame_layout.addWidget(self.label_convert)
+        #self.left_frame_layout.addWidget(self.progress_bar_convert)
 
         label_name_threads = "Потоки"
         if not self.settings["auto_convert_all_formats"]:
@@ -127,7 +130,7 @@ class NewPartsCreationProcessWindow(QWidget):
         self.left_frame_layout.addWidget(self.threads_label)
         self.left_frame_layout.addWidget(self.scrollable)
 
-        self.hLayout.addWidget(self.left_frame)
+        self.hLayout.addWidget(self.left_frame, 30)
 
 
         self.right_frame = QFrame()
@@ -142,18 +145,41 @@ class NewPartsCreationProcessWindow(QWidget):
         self.right_frame_layout.addWidget(self.terminal_label)
         self.right_frame_layout.addWidget(self.terminal_out)
 
-        self.hLayout.addWidget(self.right_frame)
+        self.hLayout.addWidget(self.right_frame, 70)
 
         self.layout.addWidget(self.label)
         self.layout.addLayout(self.hLayout)
         self.setLayout(self.layout)
 
+        self.workers = []
+        self.workers_entries = []
 
         self.hidden = HiddenDonut()
+
+        self.signals = UpdateSignal()
+        self.signals.update.connect(self.update_workers_show)
 
         pro = Progress()
         name = self.project["name"]
         self.process = env.task_manager.create_process(self.new_parts_control_worker, f"[{name}] Создание новых деталей", progress=pro)
+
+        #exit_dc = [False]
+
+        timer = QTimer()
+        timer.timeout.connect(lambda: self.update_overall_progress(None, True))
+        timer.setInterval(500)
+        timer.start()
+
+        #self.process.run_silent_task(lambda: auto_check_overall_progress(exit=exit_dc))
+
+        #self.process.signals.process_status_changed.connect(self.update_workers_show)
+        #self.update_workers_show()
+
+    def print_terminal(self, string, rgb_color="rgb(74,246,38)", color=None):
+        if color != None:
+            self.terminal_out.signals.append.emit({"string": string, "color": color})
+        else:
+            self.terminal_out.signals.append.emit({"string": string, "rgb_color": rgb_color})
 
     def new_parts_control_worker(self, process):
         local_path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
@@ -169,14 +195,24 @@ class NewPartsCreationProcessWindow(QWidget):
         ret = env.net_manager.parts.register_parts(self.project["id"], parts_send)
         start_idx = ret["start_idx"]
 
-        files_size = env.file_manager.get_list_size(self.files)
-        process.progress.full = files_size*2
+        files_size_convert = 0
+        if self.settings["auto_convert_all_formats"]:
+            for f in self.files:
+                ext = f["path"].split(".")[-1]
+                convert_list = CONVERT_WAYS[ext]
+                files_size_convert += (f["size"]*len(convert_list))
+
+        files_size_copy = env.file_manager.get_list_size(self.files)
+        files_size = files_size_convert + files_size_copy
+        process.progress.full = files_size
         
         task_copy_pro = Progress()
-        task_copy_pro.full = files_size
+        task_copy_pro.full = files_size_copy
 
         task_copy = process.append_task(lambda: 1+1, "Копирование", task_copy_pro, _disable_task_end_on_func_end=True)
         
+        self.workers.append(task_copy)
+
         self.copied_pathes = []
 
         task_copy.progress.signals.progress_changed.connect(self.copy_update_progress)
@@ -195,18 +231,24 @@ class NewPartsCreationProcessWindow(QWidget):
                 file_new = self.files[i].copy()
                 file_new["path"] = path
                 self.copied_pathes.append(file_new)
+                path_from = self.files[i]["path"]
+                self.print_terminal(f"Копирование файла \n{path_from} -> {path}")
             except Exception as e:
                 print(e)
                 task_copy.set_status(FAILED)
                 path = self.files[i]["path"]
+                self.print_terminal(f"Не удалось создать копию файла: {path_from} -> {path}", color="red")
                 #utils.message(f"Не удалось создать копию файла: {path} -> {new_name}")
                 process.set_status(FAILED)
                 return
-            task_copy_pro.add(f["size"])
-            process.progress.add(f["size"])
+            
+            task_copy_pro.add(self.files[i]["size"])
+            process.progress.add(self.files[i]["size"])
+            
+            
         
-        #if task_copy.status != FAILED:
-            #task_copy.set_status(ENDED)
+        if task_copy.status != FAILED:
+            task_copy.set_status(ENDED)
 
         if not self.settings["auto_convert_all_formats"]:
             process.set_status(ENDED)
@@ -222,6 +264,7 @@ class NewPartsCreationProcessWindow(QWidget):
             task_convert = process.append_task(lambda: self.convert_worker(self.copied_pathes, task_convert_pro, 
             process=process, control_pro=pro), "Конвертирование", task_convert_pro)
             self._disable_process_end_on_func_end = True # just wait copy worker to finish
+            self.workers.append(task_convert)
             return
 
         j = 0
@@ -230,23 +273,63 @@ class NewPartsCreationProcessWindow(QWidget):
             task_convert = process.append_task(lambda: self.convert_worker(self.copied_pathes[j:(j+files_count_for_task)], 
             task_convert_pro, process=process, control_pro=process.progress), f"[Поток {str(i+1)}] Конвертирование", task_convert_pro)
             j += files_count_for_task
+            self.workers.append(task_convert)
 
         task_convert_pro = Progress()
         first_idx = files_count_for_task * (tasks_count-1)
         last_files = self.copied_pathes[first_idx:]
         task_convert = process.append_task(lambda: self.convert_worker(last_files, 
         task_convert_pro, process=process, control_pro=process.progress), f"[Поток {str(tasks_count)}] Конвертирование", task_convert_pro)
+        self.workers.append(task_convert)
+
+        self.signals.update.emit()
 
     def convert_worker(self, files, progress, process, control_pro):
+        size = 0
         for f in files:
             ext = f["path"].split(".")[-1]
             convert_list = CONVERT_WAYS[ext]
+            size += (f["size"]*len(convert_list))
+
+        progress.full = size
+        for f in files:
+            ext = f["path"].split(".")[-1]
+            convert_list = CONVERT_WAYS[ext]
+            failed = False
+            path = f["path"]
             for to_ext in convert_list:
-                f_new = f["path"].split(".")[0] + "." + to_ext
-                env.convert_manager.convert(f["path"], f_new)
+                try:
+                    f_new = path.split(".")[0] + "." + to_ext
+                    env.convert_manager.convert(path, f_new)
+                except:
+                    failed = True
+                    self.print_terminal(f"Не удалось сконвертировать: {path} -> {f_new}", color="red")
+                
+            if failed:
+                self.print_terminal(f"Произошли с ошибкой: {path}", color="yellow")
+            else:
+                self.print_terminal(f"Успешно конвертирование: \n{path}")
+
             progress.add(f["size"])
             control_pro.add(f["size"])
+            print(control_pro.get_percentage())
 
+    def update_workers_show(self):
+        for w in self.workers_entries:
+            if p.parent() != None:
+                p.setParent(None)
+
+        self.workers_entries = []
+
+        for i in range(len(self.workers)):
+            worker = self.workers[i]
+            t = TaskListEntry(worker, parent=self)
+            self.scrollWidgetLayout.insertWidget(i, t)
+            self.scrollWidgetLayout.setAlignment(t, Qt.AlignmentFlag.AlignTop)
+
+            self.workers_entries.append(t)
+        
+        self.update_overall_progress(None, manual=True)
 
     def show_donut(self):
         self.hidden.show()
@@ -254,8 +337,12 @@ class NewPartsCreationProcessWindow(QWidget):
 
     def copy_update_progress(self, pg):
         self.progress_bar_copy.setValue(pg)
-    def update_overall_progress(self, pg):
-        self.progress_bar_overall.setValue(pg)
+    def update_overall_progress(self, pg, manual=False):
+        if manual:
+            self.progress_bar_overall.setValue(self.process.progress.get_percentage())
+            print(self.process.progress.get_percentage())
+        else:
+            self.progress_bar_overall.setValue(pg)
 
     def test2(self, progress):
         r = 0

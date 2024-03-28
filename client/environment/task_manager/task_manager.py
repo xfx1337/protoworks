@@ -22,6 +22,8 @@ class TaskManager(QThreadPool):
         self.tasks[process.id] = process 
         self.start(process)
 
+        return process
+
     def run_silent_task(self, fn):
         task = Task(fn, "silent")
         self.start(task)
