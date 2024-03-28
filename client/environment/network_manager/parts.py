@@ -25,7 +25,14 @@ class Parts:
         self.env = self.net_manager.env
     
     def get_parts(self, project_id):
-        self.net_manager.request("/api/parts/get_parts", {"project_id": project_id})
+        r = self.net_manager.request("/api/parts/get_parts", {"project_id": project_id})
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)
         return json.loads(r.text)["parts"]
+
+    def register_parts(self, project_id, parts):
+        r = self.net_manager.request("/api/parts/register_parts", {"project_id": project_id, "parts": parts})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)
+        
+        return json.loads(r.text)

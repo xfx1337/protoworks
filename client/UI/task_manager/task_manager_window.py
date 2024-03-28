@@ -68,19 +68,19 @@ class TaskManagerWindow(QWidget):
             process = tasks[tasks_sorted[i]]
             if type(process) == Process:
                 p = ProcessListEntry(process, parent=self)
-                self.scrollWidgetLayout.insertWidget(i, p)
+                self.scrollWidgetLayout.insertWidget(j, p)
                 self.scrollWidgetLayout.setAlignment(p, Qt.AlignmentFlag.AlignTop)
 
                 self.tasks_entries.append(p)
 
-            j = i
+                j += 1
 
         for i in range(len(tasks_sorted)):
             task = tasks[tasks_sorted[i]]
             if type(task) != Process:
                 if (not task.process_child):
                     p = TaskListEntry(task, parent=self)
-                    self.scrollWidgetLayout.insertWidget(j+1, p)
+                    self.scrollWidgetLayout.insertWidget(j, p)
                     self.scrollWidgetLayout.setAlignment(p, Qt.AlignmentFlag.AlignTop)
 
                     self.tasks_entries.append(p)

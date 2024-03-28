@@ -3,6 +3,7 @@ from singleton import singleton
 import psycopg2
 
 from environment.database.projects_sync import ProjectsSync
+from environment.database.parts import Parts
 
 @singleton
 class Database:
@@ -13,3 +14,4 @@ class Database:
         self.cursor = self.connection.cursor()
 
         self.projects_sync = ProjectsSync(self)
+        self.parts = Parts(self)

@@ -49,7 +49,7 @@ FILE_FORMATS = {
     KOMPAS_PART: "m3d",
     KOMPAS_ASSEMBLY: "a3d",
     KOMPAS_FRAGMENT: "frw",
-    KOMPAS_BLUEPRINT: "NOT_IMPLEMENTED",
+    KOMPAS_BLUEPRINT: "cdw",
     GCODE: "gcode",
     SOLID_PART: "sldprt",
     SOLID_ASSEMBLY: "sldasm",
@@ -76,6 +76,11 @@ DETAILS_DIRS = [
     "dwg - Графика",
     "pdf - Документация", 
 ]
+
+def get_dir_name_by_ext(ext):
+    for e in DETAILS_DIRS:
+        if ext in e:
+            return e
 
 DXF_VERSION = {
     "AC1015": "AutoCAD 2000",
@@ -104,3 +109,8 @@ def format_by_file(file):
 
 MATERIAL_TECH_TASK = 0
 MATERIAL_MEDIA = 1
+
+PART_DONE = 0
+PART_PRODUCTION = 1
+PART_IN_WORK = 2
+PART_IN_COORDINATION = 3

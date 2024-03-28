@@ -5,6 +5,8 @@ from PySide6.QtGui import QShortcut, QKeySequence
 
 from PySide6.QtCore import Signal, QObject
 
+import os
+
 import utils
 from defines import *
 
@@ -17,8 +19,6 @@ from UI.widgets.QPathInput import QPathInput
 from UI.widgets.QChooseManyCheckBoxes import QChooseManyCheckBoxes
 from UI.widgets.QFilesListSureDialog import QFilesListSureWidget
 from UI.widgets.QEasyScroll import QEasyScroll
-
-from UI.widgets.QTerminalScreenOutput import QTerminalScreenOutput
 
 
 from environment.templates_manager.templates_manager import TemplatesManager
@@ -33,161 +33,7 @@ from environment.task_manager.statuses import *
 
 import time
 
-from UI.part_manager.donut_joke import *
-
-
-class HiddenDonut(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setFixedSize(QSize(600, 700))
-        self.hidden_terminal = QTerminalScreenOutput()
-        self.hidden_layout = QVBoxLayout()
-        self.hidden_layout.addWidget(self.hidden_terminal)
-        self.setLayout(self.hidden_layout)
-        self.terminator = [False]
-
-        self.setWindowTitle(f"[Процесс] Пасхалка в виде пончика")
-        self.setWindowIcon(templates_manager.icons["proto"])
-
-    def closeEvent(self, event):
-        self.terminator[0] = True
-        event.accept() # let the window close
-
-    def donut_render(self):
-        try: run(self.terminator, lambda send: self.hidden_terminal.signals.append.emit(send))
-        except: pass
-
-class NewPartsCreationProcessWindow(QWidget):
-    def __init__(self, project, files, settings):
-        super().__init__()
-
-        self.shortcut_open = QShortcut(QKeySequence('Ctrl+R'), self)
-        self.shortcut_open.activated.connect(self.show_donut)
-
-        self.project = project
-        self.files = files
-        self.settings = settings
-
-        self.setWindowTitle(f"[Процесс] Автоматическое создание деталей")
-        self.setWindowIcon(templates_manager.icons["proto"])
-        self.setFixedSize(QSize(700, 500))
-
-        self.hLayout = QHBoxLayout()
-        self.layout = QVBoxLayout()
-
-        threads_count = int(env.config_manager["heavy_processing"]["task_threads"])
-
-        self.label = QLabel("Обработчик деталей")
-
-        self.left_frame = QFrame()
-        self.left_frame_layout = QVBoxLayout()
-        self.left_frame.setLayout(self.left_frame_layout)
-        self.left_frame.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
-        self.left_frame.setLineWidth(1)
-
-
-        self.label_copy = QLabel("Копирование деталей")
-        self.progress_bar_copy = QProgressBar(self)
-        self.progress_bar_copy.setValue(0)
-
-        self.left_frame_layout.addWidget(self.label_copy)
-        self.left_frame_layout.addWidget(self.progress_bar_copy)
-
-        label_name = "Конвертирование деталей"
-        if not self.settings["auto_convert_all_formats"]:
-            label_name = "[Отключено] Конвертирование деталей"
-
-        self.label_convert = QLabel(label_name)
-        self.progress_bar_convert = QProgressBar(self)
-        self.progress_bar_convert.setValue(0)
-        if not self.settings["auto_convert_all_formats"]:
-            self.progress_bar_convert.setValue(100)
-
-        self.left_frame_layout.addWidget(self.label_convert)
-        self.left_frame_layout.addWidget(self.progress_bar_convert)
-
-        label_name_threads = "Потоки"
-        if not self.settings["auto_convert_all_formats"]:
-            label_name_threads = "[Отключено] Потоки"
-
-        self.threads_label = QLabel(label_name_threads)
-        self.scrollable = QEasyScroll()
-        self.scrollWidgetLayout = self.scrollable.scrollWidgetLayout
-        self.scrollWidget = self.scrollable.scrollWidget
-        self.workers_entries = []
-
-        self.left_frame_layout.addWidget(self.threads_label)
-        self.left_frame_layout.addWidget(self.scrollable)
-
-        self.hLayout.addWidget(self.left_frame)
-
-
-        self.right_frame = QFrame()
-        self.right_frame_layout = QVBoxLayout()
-        self.right_frame.setLayout(self.right_frame_layout)
-        self.right_frame.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
-        self.right_frame.setLineWidth(1)
-
-
-        self.terminal_label = QLabel("Терминал")
-        self.terminal_out = QTerminalScreenOutput()
-        self.right_frame_layout.addWidget(self.terminal_label)
-        self.right_frame_layout.addWidget(self.terminal_out)
-
-        self.hLayout.addWidget(self.right_frame)
-
-        self.layout.addWidget(self.label)
-        self.layout.addLayout(self.hLayout)
-        self.setLayout(self.layout)
-
-
-        self.hidden = HiddenDonut()
-
-        pro = Progress()
-        self.process = env.task_manager.create_process(self.test, "Ебать колотить целый процесс", progress=pro)
-
-    def test(self, process):
-        pro = Progress()
-        task = process.append_task(lambda: self.test2(pro), "градиент хпс", pro)
-        process.progress.full = 1000
-        while task.status == RUNNING:
-            time.sleep(0.2)
-            process.progress.add(1)
-
-    def show_donut(self):
-        self.hidden.show()
-        env.task_manager.run_silent_task(self.hidden.donut_render)
-
-    def test2(self, progress):
-        r = 0
-        g = 128
-        b = 255
-        r_d = 1
-        g_d = -1
-        b_d = 1
-        strings = ["хуй", "пизда", "сковорода"]
-        progress.full = 1000
-        for i in range(1000):
-            time.sleep(0.05)
-            if r > 248:
-                r_d = -1
-            if r < 6:
-                r_d = 1
-            if b > 248:
-                b_d = -1
-            if b < 6:
-                b_d = 1
-            if g > 248:
-                g_d = -1
-            if g < 6:
-                g_d = 1
-            r += r_d*5
-            g += g_d*5
-            b += b_d*5
-            color_rgb = f"rgb({str(r)}, {str(g)}, {str(b)})"
-            string = strings[i % 3]
-            progress.add(1)
-            self.terminal_out.signals.append.emit({"string": string, "rgb_color": color_rgb})
+from UI.part_manager.NewPartsCreationProcessWindow import NewPartsCreationProcessWindow
 
 
 class SettingsFrame(QFrame):
@@ -267,6 +113,11 @@ class NewPartsTab(QFrame):
         self.layout.addWidget(self.settings_frame, 20)
         self.layout.addWidget(self.run_btn)
 
+        server_parts = env.net_manager.parts.get_parts(self.project["id"])
+        self.server_parts_relative = []
+        for f in server_parts:
+            self.server_parts_relative.append(utils.remove_path(self.project["server_path"], f["path"]))
+
 
         self.setLayout(self.layout)
 
@@ -309,7 +160,16 @@ class NewPartsTab(QFrame):
         for f in self.files:
             if f["visible"]:
                 visible_files.append(f)
-        self.files_show.files_yes = visible_files
+
+        
+        real_files = []
+        local_path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
+        for f in visible_files:
+            if utils.remove_path(local_path, f["path"]) not in self.server_parts_relative:
+                real_files.append(f)
+
+
+        self.files_show.files_yes = real_files
         self.files_show.files_no = []
         self.files_show.load_data()
         self.files_show.update()

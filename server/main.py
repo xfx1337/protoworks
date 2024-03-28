@@ -19,6 +19,7 @@ import services.files
 import services.audit
 import services.materials
 import services.hardware
+import services.parts
 
 sys.dont_write_bytecode = True # no pycache now
 
@@ -162,6 +163,14 @@ def paper_print_get_jobs():
 @app.route('/api/hardware/cancel_paper_printing', methods=['POST'])
 def cancel_paper_printing():
     return services.hardware.cancel_paper_printing(request)
+
+@app.route('/api/parts/get_parts', methods=['POST'])
+def get_parts():
+    return services.parts.get_parts(request)
+
+@app.route('/api/parts/register_parts', methods=['POST'])
+def register_parts():
+    return services.parts.register_parts(request)
 
 app.run(threaded=True, debug=False, host="0.0.0.0")
 CORS(app)

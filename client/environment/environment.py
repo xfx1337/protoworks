@@ -10,6 +10,7 @@ from environment.templates_manager.templates_manager import TemplatesManager
 from environment.file_manager.file_manager import FileManager
 from environment.database.db import Database
 from environment.part_manager.part_manager import PartManager
+from environment.convert_manager.convert_manager import ConvertManager
 
 import utils
 
@@ -30,6 +31,8 @@ class Environment():
         self.db = Database()
 
         self.part_manager = PartManager(self)
+
+        self.convert_manager = ConvertManager(self)
 
         self.main_signals = None
         self.main_window = None

@@ -57,7 +57,7 @@ class Files:
         self.env.file_manager.delete_file(src_path)
         return data
 
-    def send_files(self, src_path, dest_path, progress=None, filter_func=None, additional_data_to_send=None, files_only=None):
+    def send_files(self, src_path, dest_path, progress=None, filter_func=None, additional_data_to_send=None, files_only=None, pw_folders_restriction=True):
         files_list = []
         if src_path != "" and src_path != None:
             files_list = self.env.file_manager.get_files_list(src_path)
@@ -69,6 +69,13 @@ class Files:
             for i in range(len(files_list)):
                 if type(files_list[i]) == str:
                     files_list[i] = File(files_list[i])
+
+        if pw_folders_restriction:
+            files_list_final = []
+            for i in range(len(files_list)):
+                if "PW" not in files_list[i].path:
+                    files_list_final.append(files_list[i])
+            files_list = files_list_final
 
         progress.full = self.env.file_manager.get_list_size(files_list)
 
@@ -138,7 +145,7 @@ class Files:
     def get_zipped_path(self, path, progress=None):
         return self.get_zipped_files(path=path, progress=progress, by_path=True)
         
-    def get_zipped_files(self, path=None, files=None, progress=None, by_path=False):
+    def get_zipped_files(self, path=None, files=None, progress=None, by_path=False, disable_pw_folders=True):
         cfg = self.env.config_manager
         local_filename = utils.get_unique_id()
         local_filename = os.path.join(cfg["path"]["temp_path"], local_filename) + ".zip"
@@ -150,6 +157,14 @@ class Files:
             if type(files[0]) == type(File()):
                 for i in range(len(files)):
                     files[i] = files[i].path
+            
+            if disable_pw_folders:
+                real_files = []
+                for f in files:
+                    if "PW" not in f:
+                        real_files.append(f)
+                files = real_files
+
             data = {"files": files, "token": self.net_manager.token, "path": path}
         with requests.post(self.net_manager.host+url, stream=True, 
             data = data, 

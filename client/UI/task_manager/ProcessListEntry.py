@@ -69,7 +69,8 @@ class ProcessListEntry(QFrame):
         if self.process.status == ENDED or self.process.status == CANCELED or self.process.status == FAILED:
             if self.prog_bar.parent != None:
                 self.prog_bar.setParent(None)
-        
+    
+
         self.on_status_change()
 
     def open_more(self):
