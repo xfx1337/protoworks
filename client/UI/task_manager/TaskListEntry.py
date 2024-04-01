@@ -30,19 +30,21 @@ class TaskListEntry(QWidget):
 
         self.setStyleSheet(stylesheets.DEFAULT_BORDER_STYLESHEET)
         
-        self.prog_bar = QProgressBar(self)
-        #self.prog_bar.setGeometry(50, 100, 250, 30)
-        self.prog_bar.setValue(self.task.progress.get_percentage())
-        
-        self.task.progress.signals.progress_changed.connect(self.update_progress)
+        if self.task.progress != None:
+            self.prog_bar = QProgressBar(self)
+            #self.prog_bar.setGeometry(50, 100, 250, 30)
+            self.prog_bar.setValue(self.task.progress.get_percentage())
+            
+            self.task.progress.signals.progress_changed.connect(self.update_progress)
 
-        self.layout.addWidget(self.prog_bar)
+            self.layout.addWidget(self.prog_bar)
 
         self.setLayout(self.layout)
 
         if self.task.status == ENDED or self.task.status == CANCELED or self.task.status == FAILED:
-            if self.prog_bar.parent != None:
-                self.prog_bar.setParent(None)
+            if self.task.progress != None:
+                if self.prog_bar.parent != None:
+                    self.prog_bar.setParent(None)
         
         self.on_status_change()
 
@@ -61,7 +63,8 @@ class TaskListEntry(QWidget):
             self.label.setStyleSheet(stylesheets.YELLOW_HIGHLIGHT)
         
         if self.task.status != RUNNING and self.task.status != WAITING:
-            self.prog_bar.hide()
+            if self.task.progress != None:
+                self.prog_bar.hide()
             self.setStyleSheet(stylesheets.DISABLE_BORDER)
 
         

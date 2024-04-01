@@ -36,3 +36,8 @@ class Parts:
             raise exceptions.REQUEST_FAILED(r.text)
         
         return json.loads(r.text)
+    
+    # def confirm_parts(self, project_id, ids):
+    #     r = self.net_manager.request("/api/parts/confirm_parts", {"project_id": project_id, "parts_ids": ids})
+    #     if r.status_code != 200:
+    #         raise exceptions.REQUEST_FAILED(r.text)

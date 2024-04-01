@@ -35,7 +35,7 @@ class FileManager:
         for f in files.keys():
             shutil.copy(f, files[f])
 
-    def get_files_list(self, path, files_only=False, subdirs=True):
+    def get_files_list(self, path, files_only=False, subdirs=True, pw_folders_restriction=False):
         if subdirs:
             files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(path) for f in filenames]
         else:
@@ -50,8 +50,14 @@ class FileManager:
         files_list = []
 
         for f in files:
-            f_c = File(path=f, f_type=FILE)
-            files_list.append(f_c)
+            st = True
+            if pw_folders_restriction:
+                for folder in PW_RESTRICTION_DIRS:
+                    if folder in f:
+                        st = False
+            if st:
+                f_c = File(path=f, f_type=FILE)
+                files_list.append(f_c)
 
         if not files_only:
             for f in dirs:
@@ -77,6 +83,14 @@ class FileManager:
                 size += os.path.getsize(f)
         
         return size
+
+    def search(self, path, name):
+        result = []
+        for root, dirs, files in os.walk(path):
+            for f in files:
+                if name in f:
+                    result.append(os.path.join(root, f))
+        return result
 
     def make_data_zip(self, files_list, relative=None, additional_data_to_send=None):
         dirs = [f for f in files_list if f.f_type == FOLDER]

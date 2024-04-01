@@ -64,7 +64,7 @@ FILE_FORMATS = {
     NC: "nc"
 }
 
-PART_DONE = 0
-PART_PRODUCTION = 1
-PART_IN_WORK = 2
-PART_IN_COORDINATION = 3
+PART_DONE = 0 # done
+PART_PRODUCTION = 1 # printing/milling
+PART_IN_WORK = 2 # cad
+PART_IN_COORDINATION = 3 # waiting

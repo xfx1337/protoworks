@@ -116,13 +116,17 @@ class NewPartsTab(QFrame):
 
         server_parts = env.net_manager.parts.get_parts(self.project["id"])
         self.server_parts_relative = []
+        self.server_parts_relative_dc = {}
         for f in server_parts:
             self.server_parts_relative.append(utils.remove_path(self.project["server_path"], f["path"]))
-
+            self.server_parts_relative_dc[utils.remove_path(self.project["server_path"], f["path"])] = f
 
         self.setLayout(self.layout)
 
     def run_creation(self):
+        if len(self.files_show.files_yes) == 0:
+            utils.message("Не выбраны файлы.", tittle="Уведомление")
+            return
         self.creation_wnd = NewPartsCreationProcessWindow(self.project, self.files_show.files_yes, self.settings_frame.get_settings())
         self.creation_wnd.show()
         self.parent().close()
@@ -131,9 +135,9 @@ class NewPartsTab(QFrame):
         if self.folder_select.path == None:
             return
         if self.subfolders_enable_cb.isChecked():
-            self.files = env.file_manager.get_files_list(self.folder_select.path, files_only=True)
+            self.files = env.file_manager.get_files_list(self.folder_select.path, files_only=True, pw_folders_restriction=True)
         else:
-            self.files = env.file_manager.get_files_list(self.folder_select.path, files_only=True, subdirs=False)
+            self.files = env.file_manager.get_files_list(self.folder_select.path, files_only=True, subdirs=False, pw_folders_restriction=True)
 
         self.files = env.file_manager.files_list_to_dict_list(self.files)
 
@@ -166,8 +170,12 @@ class NewPartsTab(QFrame):
         real_files = []
         local_path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
         for f in visible_files:
-            if utils.remove_path(local_path, f["path"]) not in self.server_parts_relative:
+            ch_path = utils.remove_path(local_path, f["path"])
+            if ch_path not in self.server_parts_relative:
                 real_files.append(f)
+            else:
+                if self.server_parts_relative_dc[ch_path]["status"] == PART_IN_COORDINATION:
+                    real_files.append(f)
 
 
         self.files_show.files_yes = real_files

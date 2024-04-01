@@ -19,4 +19,5 @@ class ConvertManager:
         self.env = env
     
     def convert(self, fr, to):
-        pass
+        if fr.split(".")[-1] in ["m3d", "frw"]:
+            self.env.kompas3d.request(lambda: self.env.kompas3d.files.convert(fr, to), ask_response=True)

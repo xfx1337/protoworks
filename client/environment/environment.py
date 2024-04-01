@@ -12,6 +12,9 @@ from environment.database.db import Database
 from environment.part_manager.part_manager import PartManager
 from environment.convert_manager.convert_manager import ConvertManager
 
+from environment.software.kompas3d.api import Api as KompasAPI
+
+
 import utils
 
 @singleton
@@ -33,6 +36,8 @@ class Environment():
         self.part_manager = PartManager(self)
 
         self.convert_manager = ConvertManager(self)
+
+        self.kompas3d = KompasAPI(self)
 
         self.main_signals = None
         self.main_window = None

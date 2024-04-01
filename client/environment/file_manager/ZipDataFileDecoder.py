@@ -11,10 +11,17 @@ class ZipDataFileDecoder:
     def decode(self, data):
         self.entries = {}
         data += "\n"
-        if "PROJECT DATA" in data:
-            d = get(data, "PROJECT DATA: ")
+        if "PROJECT_DATA" in data:
+            d = get(data, "PROJECT_DATA: ")
             self.entries['project'] = json.loads(d)
         
+        if "PARTS_DATA" in data:
+            d = get(data, "PARTS_DATA:", "LIST_END").split("\n")
+            self.entries["parts"] = []
+            for f in d:
+                try: self.entries["files"].append(json.loads(f))
+                except: pass
+
         if "PROTOWORKS_VERSION" in data:
             d = get(data, "PROTOWORKS_VERSION: ").replace("\n", "").replace("\r", "")
             self.entries["pw_ver"] = d

@@ -57,7 +57,7 @@ class Files:
         self.env.file_manager.delete_file(src_path)
         return data
 
-    def send_files(self, src_path, dest_path, progress=None, filter_func=None, additional_data_to_send=None, files_only=None, pw_folders_restriction=True):
+    def send_files(self, src_path, dest_path, progress=None, filter_func=None, additional_data_to_send=None, files_only=None, pw_folders_restriction=False):
         files_list = []
         if src_path != "" and src_path != None:
             files_list = self.env.file_manager.get_files_list(src_path)
@@ -83,7 +83,7 @@ class Files:
         # dirs_only = self.env.file_manager.files_list_to_dict_list(dirs_only)
         # dirs_relative = [f.relative(src_path) for f in dirs_only]
         # self.create_dirs(dirs_relative, dest_path)
-
+        
         path = self.env.file_manager.make_data_zip(files_list, relative=src_path, additional_data_to_send=additional_data_to_send)
         data = self.send_data_zip(path, dest_path, progress=progress)
         return data
@@ -145,7 +145,7 @@ class Files:
     def get_zipped_path(self, path, progress=None):
         return self.get_zipped_files(path=path, progress=progress, by_path=True)
         
-    def get_zipped_files(self, path=None, files=None, progress=None, by_path=False, disable_pw_folders=True):
+    def get_zipped_files(self, path=None, files=None, progress=None, by_path=False, disable_pw_folders=False):
         cfg = self.env.config_manager
         local_filename = utils.get_unique_id()
         local_filename = os.path.join(cfg["path"]["temp_path"], local_filename) + ".zip"

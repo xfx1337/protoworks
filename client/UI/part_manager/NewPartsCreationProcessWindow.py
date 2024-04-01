@@ -40,8 +40,9 @@ from environment.convert_manager.convert_ways import CONVERT_WAYS
 
 from UI.part_manager.UpdateSignal import UpdateSignal
 
-import copy
-import inspect
+import pythoncom
+import win32com
+import threading
 
 class HiddenDonut(QWidget):
     def __init__(self):
@@ -166,13 +167,6 @@ class NewPartsCreationProcessWindow(QWidget):
         name = self.project["name"]
         self.process = env.task_manager.create_process(self.new_parts_control_worker, f"[{name}] Создание новых деталей", progress=pro)
 
-        #exit_dc = [False]
-
-        timer = QTimer()
-        timer.timeout.connect(lambda: self.update_overall_progress(None, True))
-        timer.setInterval(500)
-        timer.start()
-
         #self.process.run_silent_task(lambda: auto_check_overall_progress(exit=exit_dc))
 
         #self.process.signals.process_status_changed.connect(self.update_workers_show)
@@ -183,6 +177,23 @@ class NewPartsCreationProcessWindow(QWidget):
             self.terminal_out.signals.append.emit({"string": string, "color": color})
         else:
             self.terminal_out.signals.append.emit({"string": string, "rgb_color": rgb_color})
+
+    def callback_server_after_process_end(self, ids):
+        while self.process.progress.get_percentage() != 100:
+            time.sleep(1)
+
+        if self.process.status == FAILED:
+            return
+
+        pro = Progress()
+        fn = lambda: env.part_manager.send_parts(self.project, ids, progress=pro)
+        task = self.process.append_task(fn, "Синхронизация деталей", pro)
+        self.workers.append(task)
+        self.signals.update.emit()
+
+        while task.status != ENDED:
+            time.sleep(1)
+        self.process.set_status(ENDED)
 
     def new_parts_control_worker(self, process):
         local_path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
@@ -198,6 +209,10 @@ class NewPartsCreationProcessWindow(QWidget):
         ret = env.net_manager.parts.register_parts(self.project["id"], parts_send)
         start_idx = ret["start_idx"]
 
+        ids = []
+        for i in range(len(parts_send)):
+            ids.append(start_idx + i)
+
         files_size_convert = 0
         if self.settings["auto_convert_all_formats"]:
             for f in self.files:
@@ -207,7 +222,6 @@ class NewPartsCreationProcessWindow(QWidget):
 
         files_size_copy = env.file_manager.get_list_size(self.files)
         files_size = files_size_convert + files_size_copy
-        print(files_size_convert)
         process.progress.full = files_size
         
         task_copy_pro = Progress()
@@ -248,8 +262,12 @@ class NewPartsCreationProcessWindow(QWidget):
             
             task_copy_pro.add(self.files[i]["size"])
             process.progress.add(self.files[i]["size"])
-            
-            
+
+        ids = []
+        for i in range(len(parts_send)):
+            ids.append(start_idx+i)
+
+        env.task_manager.run_silent_task(lambda: self.callback_server_after_process_end(ids))
         
         if task_copy.status != FAILED:
             task_copy.set_status(ENDED)
@@ -261,38 +279,88 @@ class NewPartsCreationProcessWindow(QWidget):
         tasks_convert = []
         tasks_count = int(env.config_manager["heavy_processing"]["task_threads"])
 
-        files_count_for_task = len(self.copied_pathes)//(tasks_count)
+        files_kompas = []
+        files_other = []
+        for f in self.copied_pathes:
+            if f["path"].split(".")[-1] in ["m3d", "frw", "a3d", "cdw"]:
+                files_kompas.append(f)
+            else:
+                files_other.append(f)
 
-        if files_count_for_task < 1:
+        files_count_for_task = len(files_other)//(tasks_count)
+
+        if files_count_for_task < 1 and len(files_other) > 0:
             task_convert_pro = Progress()
-            if task_convert_pro == task_convert_old:
-                print("FUCK U")
-            task_convert = process.append_task(lambda: self.convert_worker(self.copied_pathes, task_convert_pro, 
+            task_convert = process.append_task(lambda: self.convert_worker(files_other, task_convert_pro, 
             process=process), "Конвертирование", task_convert_pro)
             self.workers.append(task_convert)
             task_convert_old = task_convert_pro
-            return
 
         j = 0
-        for i in range(tasks_count-1):
+        if len(files_other) > 0:
+            for i in range(tasks_count-1):
+                task_convert_pro = Progress()
+
+                fn = lambda files_s=files_other[j:(j+files_count_for_task)], task_convert_pro_s=task_convert_pro, process_s=process: self.convert_worker(files_s, task_convert_pro_s, process_s)
+                # fuck lambda.
+
+                task_convert = process.append_task(fn, f"[Поток {str(i+1)}] Конвертирование", task_convert_pro)
+                j += files_count_for_task
+                self.workers.append(task_convert)
+
+        last_files = files_other[j:]
+
+        if len(last_files) > 0:
             task_convert_pro = Progress()
 
-            fn = lambda files_s=self.copied_pathes[j:(j+files_count_for_task)], task_convert_pro_s=task_convert_pro, process_s=process: self.convert_worker(files_s, task_convert_pro_s, process_s)
-            # fuck lambda.
+            fn = lambda files_s=last_files, task_convert_pro_s=task_convert_pro, process_s=process: self.convert_worker(files_s, task_convert_pro_s, process_s)
 
-            task_convert = process.append_task(fn, f"[Поток {str(i+1)}] Конвертирование", task_convert_pro)
-            j += files_count_for_task
+            task_convert = process.append_task(fn, f"[Поток {str(tasks_count)}] Конвертирование", task_convert_pro)
             self.workers.append(task_convert)
 
-        task_convert_pro = Progress()
-        last_files = self.copied_pathes[j:]
+        if len(files_kompas) > 0:
+            task_convert_pro = Progress()
 
-        fn = lambda files_s=last_files, task_convert_pro_s=task_convert_pro, process_s=process: self.convert_worker(files_s, task_convert_pro_s, process_s)
+            fn = lambda files_s=files_kompas, task_convert_pro_s=task_convert_pro, process_s=process: self.convert_worker_kompas(files_s, task_convert_pro_s, process_s)
 
-        task_convert = process.append_task(fn, f"[Поток {str(tasks_count)}] Конвертирование", task_convert_pro)
-        self.workers.append(task_convert)
+            task_convert = process.append_task(fn, f"[Поток {len(self.workers)-1}] Конвертирование КОМПАС-3D", task_convert_pro)
+            self.workers.append(task_convert)
 
         self.signals.update.emit()
+
+    def convert_worker_kompas(self, files, progress, process):
+        size = 0
+        for f in files:
+            ext = f["path"].split(".")[-1]
+            convert_list = CONVERT_WAYS[ext]
+            size += (f["size"]*len(convert_list))
+
+        progress.full = size
+        for f in files:
+            ext = f["path"].split(".")[-1]
+            convert_list = CONVERT_WAYS[ext]
+            failed = False
+            path = f["path"]
+            for to_ext in convert_list:
+                try:
+                    path_new = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
+                    path_new = os.path.join(path_new, "ДЕТАЛИ-PW")
+                    path_new = os.path.join(path_new, get_dir_name_by_ext(to_ext))
+                    path_new = os.path.join(path_new, path.split("\\")[-1])
+                    path_new = path_new.split(".")[0] + "." + to_ext
+                    env.convert_manager.convert(path, path_new)
+                except Exception as e:
+                    failed = True
+                    self.print_terminal(f"Не удалось сконвертировать: {path} -> {path_new}\n Ошибка: {str(e)}", color="red")
+
+                progress.add(f["size"])
+                process.progress.add(f["size"])
+            
+
+            if failed:
+                self.print_terminal(f"Произошли с ошибкой: {path}", color="yellow")
+            else:
+                self.print_terminal(f"Успешно конвертирование: \n{path}")
 
     def convert_worker(self, files, progress, process):
         size = 0
@@ -309,11 +377,15 @@ class NewPartsCreationProcessWindow(QWidget):
             path = f["path"]
             for to_ext in convert_list:
                 try:
-                    f_new = path.split(".")[0] + "." + to_ext
-                    env.convert_manager.convert(path, f_new)
-                except:
+                    path_new = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
+                    path_new = os.path.join(path_new, "ДЕТАЛИ-PW")
+                    path_new = os.path.join(path_new, get_dir_name_by_ext(to_ext))
+                    path_new = os.path.join(path_new, path.split("\\")[-1])
+                    path_new = path_new.split(".")[0] + "." + to_ext
+                    env.convert_manager.convert(path, path_new)
+                except Exception as e:
                     failed = True
-                    self.print_terminal(f"Не удалось сконвертировать: {path} -> {f_new}", color="red")
+                    self.print_terminal(f"Не удалось сконвертировать: {path} -> {path_new}\n Ошибка: {str(e)}", color="red")
 
                 progress.add(f["size"])
                 process.progress.add(f["size"])
@@ -326,8 +398,8 @@ class NewPartsCreationProcessWindow(QWidget):
 
     def update_workers_show(self):
         for w in self.workers_entries:
-            if p.parent() != None:
-                p.setParent(None)
+            if w.parent() != None:
+                w.setParent(None)
 
         self.workers_entries = []
 
@@ -350,7 +422,6 @@ class NewPartsCreationProcessWindow(QWidget):
     def update_overall_progress(self, pg, manual=False):
         if manual:
             self.progress_bar_overall.setValue(self.process.progress.get_percentage())
-            print(self.process.progress.get_percentage())
         else:
             self.progress_bar_overall.setValue(pg)
 

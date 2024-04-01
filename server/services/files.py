@@ -76,6 +76,21 @@ def upload_data_zip(request):
     }
     update_info = db.audit.register_event(event)
     update_info["update_id"] = data_file["update_id"]
+
+    if "parts" in data_file:
+        for i in range(len(data_file["parts"])):
+            for j in range(len(data_file["parts"][i]["files"])):
+                data_file["parts"][i]["files"][j] = os.path.join(data_file["project"]["server_path"], data_file["parts"][i]["files"][j])
+            data_file["parts"][i]["project_id"] = data_file["project"]["id"]
+
+        db.parts.register_update(int(data_file["project"]["id"]), data_file["parts"])
+        event = {
+            "event": "PARTS_UPDATE",
+            "info": str(json.dumps(data_file)),
+            "project_id": int(data_file["project"]["id"])
+        }
+        db.audit.register_event(event)
+
     return str(json.dumps(update_info)), 200
 
 def delete_path(request):

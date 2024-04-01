@@ -18,10 +18,12 @@ from UI.paper_print.PaperPrintMenu import PaperPrintMenu
 
 import utils
 
+import pythoncom, win32com
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-
+        env.task_manager.run_system_task(env.kompas3d.kompas_api_thread, "[СИСТЕМА] КОМПАС-3D")
         env.templates_manager.load_templates() # before i cant init fucking pixmap before app starts..
         env.main_window = self
         self.get_tab_by_alias = tabs_aliases.get_tab_by_alias
@@ -38,6 +40,10 @@ class MainWindow(QMainWindow):
         app_bar_layout = QHBoxLayout()
         app_bar_layout_left = QHBoxLayout()
         app_bar_layout_right = QHBoxLayout()
+
+        app_bar_layout.addWidget(
+            QInitButton("[DEV] КОМПАС-3D", callback=lambda: self.show_kompas())
+        )
 
         app_bar_layout_left.addWidget(
             QInitButton("Программы", callback=lambda: self.open_tab(None))
@@ -113,6 +119,13 @@ class MainWindow(QMainWindow):
         main_container.setLayout(main_vertical_layout)
 
         self.setCentralWidget(main_container)
+
+    def show_kompas(self):
+        if env.kompas3d.api_inited and not env.kompas3d.thread_taken:
+            app = env.kompas3d.get_thread()
+            app.Visible=True
+            #pythoncom.CoUninitialize()
+            env.kompas3d.release_thread()
 
     def open_paper_print_menu(self):
         self.wnd = PaperPrintMenu()

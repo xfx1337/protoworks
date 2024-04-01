@@ -77,6 +77,11 @@ DETAILS_DIRS = [
     "pdf - Документация", 
 ]
 
+PW_RESTRICTION_DIRS = [
+    "ДЕТАЛИ-PW",
+    "МАТЕРИАЛЫ-PW"
+]
+
 def get_dir_name_by_ext(ext):
     for e in DETAILS_DIRS:
         if ext in e:
