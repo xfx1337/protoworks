@@ -37,6 +37,23 @@ class Parts:
         
         return json.loads(r.text)
     
+    def update_parts(self, project_id, parts):
+        r = self.net_manager.request("/api/parts/update_parts", {"project_id": project_id, "parts": parts})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)
+
+    def delete_parts(self, project_id, parts_ids):
+        r = self.net_manager.request("/api/parts/delete_parts", {"project_id": project_id, "parts": parts_ids})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)
+
+    def indentify_parts(self, pathes):
+        r = self.net_manager.request("/api/parts/indentify_parts", {"pathes": pathes})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)
+        
+        return json.loads(r.text)["parts"]
+
     # def confirm_parts(self, project_id, ids):
     #     r = self.net_manager.request("/api/parts/confirm_parts", {"project_id": project_id, "parts_ids": ids})
     #     if r.status_code != 200:

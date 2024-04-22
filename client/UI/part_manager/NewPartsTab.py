@@ -37,8 +37,11 @@ from UI.part_manager.NewPartsCreationProcessWindow import NewPartsCreationProces
 
 
 class SettingsFrame(QFrame):
-    def __init__(self):
+    def __init__(self, callback=None, force_convert=False):
         super().__init__()
+
+        self.callback = callback
+        self.force_convert = force_convert
 
         self.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
         self.setLineWidth(1)
@@ -51,12 +54,29 @@ class SettingsFrame(QFrame):
         self.layout.addWidget(self.label)
 
         self.auto_convert_btn = QCheckBox("Автоматически конвертировать файл детали во все форматы")
-        
+        self.enable_a3d_convert = QCheckBox("Разрешить конвертирование из a3d")
+        self.enable_a3d_convert.setToolTip("Часто приводит к ошибкам из-за недостающих зависимостей.")
+        self.setStyleSheet(stylesheets.TOOLTIP)
         self.layout.addWidget(self.auto_convert_btn)
+        self.layout.addWidget(self.enable_a3d_convert)
     
+        if self.callback != None:
+            self.setWindowTitle(f"Настройки конвертации")
+            self.setWindowIcon(env.templates_manager.icons["proto"])
+            self.apply_btn = QInitButton("Применить", callback=self.on_apply)
+            if self.force_convert:
+                self.auto_convert_btn.hide()
+                self.auto_convert_btn.setChecked(True)
+            self.layout.addWidget(self.apply_btn)
+
+    def on_apply(self):
+        self.close()
+        self.callback(self.get_settings())
+
     def get_settings(self):
         settings = {
-            "auto_convert_all_formats": self.auto_convert_btn.isChecked()
+            "auto_convert_all_formats": self.auto_convert_btn.isChecked(),
+            "enable_a3d_convert": self.enable_a3d_convert.isChecked()
         }
         return settings
 

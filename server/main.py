@@ -172,6 +172,18 @@ def get_parts():
 def register_parts():
     return services.parts.register_parts(request)
 
+@app.route('/api/parts/update_parts', methods=['POST'])
+def update_parts():
+    return services.parts.update_parts(request)
+
+@app.route('/api/parts/delete_parts', methods=['POST'])
+def delete_parts():
+    return services.parts.delete_parts(request)
+
+@app.route('/api/parts/indentify_parts', methods=['POST'])
+def indentify_parts():
+    return services.parts.indentify_parts(request)
+
 app.run(threaded=True, debug=False, host="0.0.0.0")
 CORS(app)
 #socketio.run(app)

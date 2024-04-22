@@ -11,6 +11,8 @@ class QInitButton(QPushButton):
         
     def mousePressEvent(self, QMouseEvent):
         if QMouseEvent.button() == Qt.MouseButton.LeftButton:
-            self.callback()
+            if self.callback != None:
+                self.callback()
         elif QMouseEvent.button() == Qt.MouseButton.RightButton:
-            self.right_click_callback()
+            if self.right_click_callback != None:
+                self.right_click_callback()

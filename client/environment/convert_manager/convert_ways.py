@@ -22,6 +22,6 @@ CONVERT_WAYS = {
     "a3d": ["m3d", "stl"],
     "frw": ["dxf", "dwg", "pdf"],
     "cdw": ["dxf", "dwg", "pdf"],
-    "dxf": ["dwg, pdf"],
+    "dxf": ["dwg", "pdf"],
     "dwg": ["dxf", "pdf"]
 }

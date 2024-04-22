@@ -117,6 +117,8 @@ def delete_logs(request):
 
     db.files.remove_logs(project_id)
 
+    return "Удачно", 200
+
 def delete_files(request):
     data = request.get_json()
     ret = db.users.valid_token(data["token"])

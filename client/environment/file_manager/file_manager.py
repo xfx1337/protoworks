@@ -18,6 +18,9 @@ class FileManager:
     def __init__(self, env):
         self.env = env
     
+    def sync_update_time(self, fr, to):
+        self.set_modification_time(to, os.path.getmtime(fr))
+
     def delete_empty_folders(self, root):
         deleted = set()
         for current_dir, subdirs, files in os.walk(root, topdown=False):
@@ -90,7 +93,11 @@ class FileManager:
             for f in files:
                 if name in f:
                     result.append(os.path.join(root, f))
-        return result
+        
+        result_objects = []
+        for f in result:
+            result_objects.append(File(path=f, f_type=FILE))
+        return result_objects
 
     def make_data_zip(self, files_list, relative=None, additional_data_to_send=None):
         dirs = [f for f in files_list if f.f_type == FOLDER]

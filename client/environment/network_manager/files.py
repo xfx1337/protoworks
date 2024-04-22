@@ -191,7 +191,7 @@ class Files:
             self.mkdir(project["server_path"])
             self.request_project_file_logs_deletion(project["id"])
             self.transfer_project_sources(os.path.join(cfg["path"]["projects_path"], project["name"]), project, progress)
-            env.net_manager.files.after_project_update(project["id"])
+            self.env.net_manager.files.after_project_update(project["id"])
         
         elif action == defines.ACTION_OVERRIDE_CLIENT_FILES:
             self._override_client_files(project, progress)

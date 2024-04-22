@@ -11,7 +11,7 @@ class Parts:
         self.cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS parts (
             row_id serial PRIMARY KEY,
-            id INT UNIQUE,
+            id INT,
             project_id INT,
             name VARCHAR(255),
             origin_path VARCHAR(255),
@@ -32,7 +32,25 @@ class Parts:
             parts.append(part)
         
         return parts
-    
+
+    def get_part(self, project_id, id):
+        sql = f"SELECT * FROM parts WHERE project_id={project_id} AND id={id}"
+        self.cursor.execute(sql)
+        p = self.cursor.fetchone()
+        if p != None:
+            part = {"id": p[1], "name": p[3], "path": p[4], "count_need": p[5], "count_done": p[6], "status": p[7]}
+            return part
+        return
+
+    def search_by_origin_path(self, project_id, path):
+        sql = f"SELECT * FROM parts WHERE project_id={project_id} AND origin_path='{path}'"
+        self.cursor.execute(sql)
+        p = self.cursor.fetchone()
+        if p != None:
+            part = {"id": p[1], "name": p[3], "path": p[4], "count_need": p[5], "count_done": p[6], "status": p[7]}
+            return part
+        return
+
     def register_parts(self, project_id, parts):
         sql = f"SELECT max(id) FROM parts WHERE project_id={project_id}"
         self.cursor.execute(sql)
@@ -43,7 +61,6 @@ class Parts:
             start_id = 0
         else:
             start_id = start_id[0] + 1
-
 
         sql_insert = "INSERT INTO parts (id, project_id, name, origin_path, count_need, count_done, status) VALUES "
         for i in range(len(parts)):
@@ -77,7 +94,7 @@ class Parts:
             d = p[1]
             parts_db_dc[d] = {"name": p[3], "path": p[4], "count_need": p[5], "count_done": p[6], "status": p[7]}
 
-        sql_update = f"INSERT INTO parts (id, count_need, count_done, status) VALUES "
+        sql_update = f"UPDATE parts AS p SET count_need=c.count_need, count_done=c.count_done, status=c.status FROM (VALUES "
         for p in parts:
             if "count_need" not in p:
                 p["count_need"] = parts_db_dc[p["id"]]["count_need"]
@@ -94,6 +111,23 @@ class Parts:
             row = f"\n({i}, {count_need}, {count_done}, {status}),"
             sql_update += row
         sql_update = sql_update[:-1]
-        sql_update += "\nON CONFLICT (id) DO UPDATE SET count_need=excluded.count_need, count_done=excluded.count_done, status=excluded.status"
+        sql_update += ") AS c(id, count_need, count_done, status) WHERE c.id = p.id"
         self.cursor.execute(sql_update)
+        self.connection.commit()
+
+        self.check_parts_done(project_id)
+
+    def check_parts_done(self, project_id):
+        sql_update = f"UPDATE parts SET status={common.PART_DONE} WHERE status={common.PART_IN_WORK} AND count_need=count_done AND count_need != 0 AND project_id={project_id}"
+        self.cursor.execute(sql_update)
+        self.connection.commit()
+    
+    def delete_parts(self, project_id, parts_ids):
+        s = "("
+        for i in parts_ids:
+            s += (str(i) + ",")
+        s = s[:-1]
+        s = s + ")"
+
+        self.cursor.execute("DELETE from parts WHERE id IN " + s)
         self.connection.commit()

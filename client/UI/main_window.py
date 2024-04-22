@@ -41,10 +41,6 @@ class MainWindow(QMainWindow):
         app_bar_layout_left = QHBoxLayout()
         app_bar_layout_right = QHBoxLayout()
 
-        app_bar_layout.addWidget(
-            QInitButton("[DEV] КОМПАС-3D", callback=lambda: self.show_kompas())
-        )
-
         app_bar_layout_left.addWidget(
             QInitButton("Программы", callback=lambda: self.open_tab(None))
         )
@@ -118,14 +114,7 @@ class MainWindow(QMainWindow):
         main_container = QWidget()
         main_container.setLayout(main_vertical_layout)
 
-        self.setCentralWidget(main_container)
-
-    def show_kompas(self):
-        if env.kompas3d.api_inited and not env.kompas3d.thread_taken:
-            app = env.kompas3d.get_thread()
-            app.Visible=True
-            #pythoncom.CoUninitialize()
-            env.kompas3d.release_thread()
+        self.setCentralWidget(main_container)   
 
     def open_paper_print_menu(self):
         self.wnd = PaperPrintMenu()

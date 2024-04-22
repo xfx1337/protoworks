@@ -66,8 +66,11 @@ class HiddenDonut(QWidget):
         except: pass
 
 class NewPartsCreationProcessWindow(QWidget):
-    def __init__(self, project, files, settings):
+    def __init__(self, project, files, settings, update_only=False, parts=[]):
         super().__init__()
+
+        self.update_only = update_only
+        self.parts = parts
 
         self.shortcut_open = QShortcut(QKeySequence('Ctrl+R'), self)
         self.shortcut_open.activated.connect(self.show_donut)
@@ -77,6 +80,9 @@ class NewPartsCreationProcessWindow(QWidget):
         self.settings = settings
 
         self.setWindowTitle(f"[Процесс] Автоматическое создание деталей")
+        if self.update_only:
+            self.setWindowTitle(f"[Процесс] Автоматическое обновление деталей")
+
         self.setWindowIcon(templates_manager.icons["proto"])
         self.setFixedSize(QSize(1280, 720))
 
@@ -134,7 +140,7 @@ class NewPartsCreationProcessWindow(QWidget):
         self.left_frame_layout.addWidget(self.threads_label)
         self.left_frame_layout.addWidget(self.scrollable)
 
-        self.hLayout.addWidget(self.left_frame, 30)
+        self.hLayout.addWidget(self.left_frame, 40)
 
 
         self.right_frame = QFrame()
@@ -149,10 +155,13 @@ class NewPartsCreationProcessWindow(QWidget):
         self.right_frame_layout.addWidget(self.terminal_label)
         self.right_frame_layout.addWidget(self.terminal_out)
 
-        self.hLayout.addWidget(self.right_frame, 70)
+        self.hLayout.addWidget(self.right_frame, 60)
+
+        self.exit_btn = QInitButton("Закрыть(без остановки процесса)", callback=lambda: self.hide())
 
         self.layout.addWidget(self.label)
         self.layout.addLayout(self.hLayout)
+        self.layout.addWidget(self.exit_btn)
         self.setLayout(self.layout)
 
         self.workers = []
@@ -165,7 +174,10 @@ class NewPartsCreationProcessWindow(QWidget):
 
         pro = Progress()
         name = self.project["name"]
-        self.process = env.task_manager.create_process(self.new_parts_control_worker, f"[{name}] Создание новых деталей", progress=pro)
+        task_name = f"[{name}] Создание новых деталей"
+        if self.update_only:
+            task_name = f"[{name}] Обновление деталей"
+        self.process = env.task_manager.create_process(self.new_parts_control_worker, task_name, progress=pro)
 
         #self.process.run_silent_task(lambda: auto_check_overall_progress(exit=exit_dc))
 
@@ -179,6 +191,8 @@ class NewPartsCreationProcessWindow(QWidget):
             self.terminal_out.signals.append.emit({"string": string, "rgb_color": rgb_color})
 
     def callback_server_after_process_end(self, ids):
+        if self.update_only:
+            return
         while self.process.progress.get_percentage() != 100:
             time.sleep(1)
 
@@ -206,19 +220,29 @@ class NewPartsCreationProcessWindow(QWidget):
             }
             parts_send.append(part)
 
-        ret = env.net_manager.parts.register_parts(self.project["id"], parts_send)
-        start_idx = ret["start_idx"]
+        if not self.update_only:
+            ret = env.net_manager.parts.register_parts(self.project["id"], parts_send)
+            start_idx = ret["start_idx"]
 
-        ids = []
-        for i in range(len(parts_send)):
-            ids.append(start_idx + i)
+            ids = []
+            for i in range(len(parts_send)):
+                ids.append(start_idx + i)
 
         files_size_convert = 0
         if self.settings["auto_convert_all_formats"]:
-            for f in self.files:
+            for i in range(len(self.files)):
+                f = self.files[i]
                 ext = f["path"].split(".")[-1]
-                convert_list = CONVERT_WAYS[ext]
+                if ext in CONVERT_WAYS:
+                    convert_list = CONVERT_WAYS[ext]
+                else:
+                    continue
+                f["size"] = os.path.getsize(f["path"])
                 files_size_convert += (f["size"]*len(convert_list))
+        
+        if self.update_only:
+            for i in range(len(self.parts)):
+                self.parts[i]["size"] = os.path.getsize(self.parts[i]["local_path"])
 
         files_size_copy = env.file_manager.get_list_size(self.files)
         files_size = files_size_convert + files_size_copy
@@ -236,41 +260,101 @@ class NewPartsCreationProcessWindow(QWidget):
         task_copy.progress.signals.progress_changed.connect(self.copy_update_progress)
         process.progress.signals.progress_changed.connect(self.update_overall_progress)
 
-        for i in range(len(self.files)):
-            ext = self.files[i]["path"].split(".")[-1]
-            file = self.files[i]["path"].split(".")[0]
-            new_name = file.split("\\")[-1] + f"_PW{str(start_idx+i)}." + ext
-            try:
-                path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
-                path = os.path.join(path, "ДЕТАЛИ-PW")
-                path = os.path.join(path, get_dir_name_by_ext(ext))
-                path = os.path.join(path, new_name)
-                shutil.copy(self.files[i]["path"], path)
-                file_new = self.files[i].copy()
-                file_new["path"] = path
-                self.copied_pathes.append(file_new)
+        if not self.update_only:
+            for i in range(len(self.files)):
+                ext = self.files[i]["path"].split(".")[-1]
+                file = self.files[i]["path"].split(".")[0]
+                new_name = file.split("\\")[-1] + f"_PW{str(start_idx+i)}." + ext
+                self.files[i]["id"] = start_idx+i
                 path_from = self.files[i]["path"]
-                self.print_terminal(f"Копирование файла \n{path_from} -> {path}")
-            except Exception as e:
-                print(e)
-                task_copy.set_status(FAILED)
-                path = self.files[i]["path"]
-                self.print_terminal(f"Не удалось создать копию файла: {path_from} -> {path}", color="red")
-                #utils.message(f"Не удалось создать копию файла: {path} -> {new_name}")
-                process.set_status(FAILED)
-                return
+                try:
+                    path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
+                    path = os.path.join(path, "ДЕТАЛИ-PW")
+
+                    dir_name = get_dir_name_by_ext(ext)
+                    if dir_name == None:
+                        dir_name = ext
+
+                    path = os.path.join(path, dir_name)
+
+                    if not os.path.exists(path):
+                        os.mkdir(path)
+
+                    path = os.path.join(path, new_name)
+                    if os.path.isfile(path):
+                        os.remove(path)
+                    shutil.copy(self.files[i]["path"], path)
+                    env.file_manager.sync_update_time(self.files[i]["path"], path)
+                    file_new = self.files[i].copy()
+                    file_new["path"] = path
+                    self.copied_pathes.append(file_new)
+                    self.print_terminal(f"Копирование файла \n{path_from} -> {path}")
+                except Exception as e:
+                    print(e)
+                    task_copy.set_status(FAILED)
+                    path = self.files[i]["path"]
+                    self.print_terminal(f"Не удалось создать копию файла: {path_from} -> {path}", color="red")
+                    #utils.message(f"Не удалось создать копию файла: {path} -> {new_name}")
+                    process.set_status(FAILED)
+                    return
+                
+                task_copy_pro.add(self.files[i]["size"])
+                process.progress.add(self.files[i]["size"])
+
+            ids = []
+            for i in range(len(parts_send)):
+                ids.append(start_idx+i)
+
+            env.task_manager.run_silent_task(lambda: self.callback_server_after_process_end(ids))
             
-            task_copy_pro.add(self.files[i]["size"])
-            process.progress.add(self.files[i]["size"])
-
-        ids = []
-        for i in range(len(parts_send)):
-            ids.append(start_idx+i)
-
-        env.task_manager.run_silent_task(lambda: self.callback_server_after_process_end(ids))
+            if task_copy.status != FAILED:
+                task_copy.set_status(ENDED)
         
-        if task_copy.status != FAILED:
-            task_copy.set_status(ENDED)
+        else:
+            for i in range(len(self.parts)):
+                part = self.parts[i]
+                ext = self.parts[i]["local_path"].split(".")[-1]
+                file = self.parts[i]["local_path"].split(".")[0]
+                self.files[i]["id"] = self.parts[i]["id"]
+                id = part["id"]
+                new_name = file.split("\\")[-1] + f"_PW{str(id)}." + ext
+                path_from = self.parts[i]["local_path"]
+                try:
+                    path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
+                    path = os.path.join(path, "ДЕТАЛИ-PW")
+
+                    dir_name = get_dir_name_by_ext(ext)
+                    if dir_name == None:
+                        dir_name = ext
+
+                    path = os.path.join(path, dir_name)
+
+                    if not os.path.exists(path):
+                        os.mkdir(path)
+
+                    path = os.path.join(path, new_name)
+                    if os.path.isfile(path):
+                        os.remove(path)
+                    shutil.copy(self.parts[i]["local_path"], path)
+                    env.file_manager.sync_update_time(self.parts[i]["local_path"], path)
+                    file_new = self.parts[i].copy()
+                    file_new["path"] = path
+                    self.copied_pathes.append(file_new)
+                    self.print_terminal(f"Копирование файла \n{path_from} -> {path}")
+                except Exception as e:
+                    print(e)
+                    task_copy.set_status(FAILED)
+                    path = self.parts[i]["local_path"]
+                    self.print_terminal(f"Не удалось создать копию файла: {path_from} -> {path}", color="red")
+                    #utils.message(f"Не удалось создать копию файла: {path} -> {new_name}")
+                    process.set_status(FAILED)
+                    return
+                task_copy_pro.add(self.parts[i]["size"])
+                process.progress.add(self.parts[i]["size"])
+            
+            if task_copy.status != FAILED:
+                task_copy.set_status(ENDED)
+        
 
         if not self.settings["auto_convert_all_formats"]:
             process.set_status(ENDED)
@@ -281,8 +365,14 @@ class NewPartsCreationProcessWindow(QWidget):
 
         files_kompas = []
         files_other = []
-        for f in self.copied_pathes:
-            if f["path"].split(".")[-1] in ["m3d", "frw", "a3d", "cdw"]:
+        for i in range(len(self.files)):
+            f = self.files[i]
+            if self.update_only:
+                self.files[i]["id"] = self.parts[i]["id"]
+            ext = f["path"].split(".")[-1]
+            if ext not in CONVERT_WAYS:
+                continue
+            if ext in ["m3d", "frw", "a3d", "cdw"]:
                 files_kompas.append(f)
             else:
                 files_other.append(f)
@@ -312,9 +402,7 @@ class NewPartsCreationProcessWindow(QWidget):
 
         if len(last_files) > 0:
             task_convert_pro = Progress()
-
             fn = lambda files_s=last_files, task_convert_pro_s=task_convert_pro, process_s=process: self.convert_worker(files_s, task_convert_pro_s, process_s)
-
             task_convert = process.append_task(fn, f"[Поток {str(tasks_count)}] Конвертирование", task_convert_pro)
             self.workers.append(task_convert)
 
@@ -323,7 +411,7 @@ class NewPartsCreationProcessWindow(QWidget):
 
             fn = lambda files_s=files_kompas, task_convert_pro_s=task_convert_pro, process_s=process: self.convert_worker_kompas(files_s, task_convert_pro_s, process_s)
 
-            task_convert = process.append_task(fn, f"[Поток {len(self.workers)-1}] Конвертирование КОМПАС-3D", task_convert_pro)
+            task_convert = process.append_task(fn, f"[Поток {len(self.workers)}] Конвертирование КОМПАС-3D", task_convert_pro)
             self.workers.append(task_convert)
 
         self.signals.update.emit()
@@ -342,12 +430,21 @@ class NewPartsCreationProcessWindow(QWidget):
             failed = False
             path = f["path"]
             for to_ext in convert_list:
+                if ext == "a3d":
+                    if not self.settings["enable_a3d_convert"]:
+                        progress.add(f["size"])
+                        process.progress.add(f["size"])
+                        continue
                 try:
                     path_new = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
                     path_new = os.path.join(path_new, "ДЕТАЛИ-PW")
                     path_new = os.path.join(path_new, get_dir_name_by_ext(to_ext))
                     path_new = os.path.join(path_new, path.split("\\")[-1])
-                    path_new = path_new.split(".")[0] + "." + to_ext
+                    id = str(f["id"])
+                    path_new = path_new.split(".")[0] + f"_PW{id}"
+                    path_new = path_new + "." + to_ext
+                    if os.path.isfile(path_new):
+                        os.remove(path_new)
                     env.convert_manager.convert(path, path_new)
                 except Exception as e:
                     failed = True
@@ -358,7 +455,7 @@ class NewPartsCreationProcessWindow(QWidget):
             
 
             if failed:
-                self.print_terminal(f"Произошли с ошибкой: {path}", color="yellow")
+                self.print_terminal(f"Попытка конвертации окончилась с ошибкой: {path}", color="yellow")
             else:
                 self.print_terminal(f"Успешно конвертирование: \n{path}")
 
@@ -381,9 +478,14 @@ class NewPartsCreationProcessWindow(QWidget):
                     path_new = os.path.join(path_new, "ДЕТАЛИ-PW")
                     path_new = os.path.join(path_new, get_dir_name_by_ext(to_ext))
                     path_new = os.path.join(path_new, path.split("\\")[-1])
-                    path_new = path_new.split(".")[0] + "." + to_ext
+                    id = str(f["id"])
+                    path_new = path_new.split(".")[0] + f"_PW{id}"
+                    path_new = path_new + "." + to_ext
+                    if os.path.isfile(path_new):
+                        os.remove(path_new)
                     env.convert_manager.convert(path, path_new)
                 except Exception as e:
+                    breakpoint()
                     failed = True
                     self.print_terminal(f"Не удалось сконвертировать: {path} -> {path_new}\n Ошибка: {str(e)}", color="red")
 
@@ -392,7 +494,7 @@ class NewPartsCreationProcessWindow(QWidget):
             
 
             if failed:
-                self.print_terminal(f"Произошли с ошибкой: {path}", color="yellow")
+                self.print_terminal(f"Попытка конвертации окончилась ошибкой: {path}", color="yellow")
             else:
                 self.print_terminal(f"Успешно конвертирование: \n{path}")
 

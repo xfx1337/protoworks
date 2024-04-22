@@ -2,6 +2,12 @@ DEFAULT_BORDER_STYLESHEET = "background-color: rgb(32,33,36); margin:5px; border
 SELECTED_BORDER_STYLESHEET = "background-color: rgb(111,113,118); margin:5px; border:1px solid rgb(105,180,215); "
 DISABLE_BORDER = "border: none;"
 
+SELECTED_STYLESHEET = "background-color: rgb(111,113,118)"
+UNSELECTED_STYLESHEET = "background-color: rgb(32,33,36)"
+
+GREEN_BACKGROUND_STYLESHEET = "background-color: rgb(0, 128, 0)"
+YELLOW_BACKGROUND_STYLESHEET = "background-color: rgb(216, 235, 9)"
+
 OVERALL_STYLESHEET = """
 QSplitter::handle
 {
@@ -24,6 +30,7 @@ RED_HIGHLIGHT = "QLabel {color: rgb(210, 20, 4)}"
 CYAN_HIGHLIGHT = "QLabel {color: rgb(0, 255, 255)}"
 PURPLE_HIGHLIGHT = "QLabel {color: rgb(204, 136, 153)}"
 NO_HIGHLIGHT = "QLabel {color: rgb(255,255,255)}"
+DEFAULT_BUTTON = "QPushButton {color: rgb(105,180,215)}"
 
 TOOLTIP = """QToolTip {
     border: 2px rgb(32,33,36);

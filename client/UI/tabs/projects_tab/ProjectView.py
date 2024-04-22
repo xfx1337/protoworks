@@ -25,6 +25,7 @@ from UI.stylesheets import *
 
 from UI.part_manager.CreatePartView import CreatePartView
 from UI.part_manager.AutoPartsCreationWindow import AutoPartsCreationWindow
+from UI.part_manager.PartsListView import PartsListView
 
 from environment.environment import Environment
 env = Environment()
@@ -80,8 +81,8 @@ class PartsManagerView(QFrame):
 
         self.create_part = QInitButton("Создать деталь", callback=self.create_part)
         self.create_part_array = QInitButton("Создать множество деталей", callback=self.create_part_array)
-        self.auto_create_parts_btn = QInitButton("Автоматическое обновление списка деталей", callback=self.auto_create_parts)
-        self.view_parts = QInitButton("Список деталей", callback=self.view_parts)
+        self.auto_create_parts_btn = QInitButton("Автоматическое создание деталей", callback=self.auto_create_parts)
+        self.view_parts = QInitButton("Менеджер деталей", callback=self.view_parts)
 
         self.layout.addWidget(self.create_part)
         self.layout.addWidget(self.create_part_array)
@@ -102,7 +103,8 @@ class PartsManagerView(QFrame):
         pass
     
     def view_parts(self):
-        pass
+        self.wnd_v = PartsListView(self.project)
+        self.wnd_v.show()
 
 class Utilities(QFrame):
     def __init__(self, project):

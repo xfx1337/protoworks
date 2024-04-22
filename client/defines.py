@@ -63,7 +63,7 @@ FILE_FORMATS = {
 DETAILS_DIRS = [
     "stl - Печать",
     "m3d - КОМПАС-Деталь",
-    "a3d - КОМАПС-Сборка",
+    "a3d - КОМПАС-Сборка",
     "frw - КОМПАС-Фрагмент",
     "NOT_IMPLEMENTED - КОМПАС-Чертёж",
     "gcode - Принтер-Код",
@@ -86,6 +86,7 @@ def get_dir_name_by_ext(ext):
     for e in DETAILS_DIRS:
         if ext in e:
             return e
+    return None
 
 DXF_VERSION = {
     "AC1015": "AutoCAD 2000",
@@ -94,7 +95,6 @@ DXF_VERSION = {
     "AC1024": "AutoCAD 2010",
     "AC1027": "AutoCAD 2013",
     "AC1032": "AutoCAD 2018"
-
 }
 
 def format_by_file(file):
@@ -115,7 +115,21 @@ def format_by_file(file):
 MATERIAL_TECH_TASK = 0
 MATERIAL_MEDIA = 1
 
-PART_DONE = 0
-PART_PRODUCTION = 1
-PART_IN_WORK = 2
-PART_IN_COORDINATION = 3
+PART_DONE = 0 # done
+PART_PRODUCTION = 1 # printing/milling
+PART_IN_WORK = 2 # cad
+PART_IN_COORDINATION = 3 # waiting
+
+PART_STATUS_TRANSLATIONS = {
+    PART_DONE: "Готово",
+    PART_PRODUCTION: "Производство",
+    PART_IN_WORK: "Проектирование",
+    PART_IN_COORDINATION: "Регистрация"
+}
+
+PART_STATUS_TRANSLATIONS_BACKWARDS = {
+    "Готово": PART_DONE,
+    "Производство": PART_PRODUCTION,
+    "Проектирование": PART_IN_WORK,
+    "Регистрация": PART_IN_COORDINATION
+}
