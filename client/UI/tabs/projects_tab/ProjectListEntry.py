@@ -71,7 +71,7 @@ class ProjectListEntry(QDoubleLabel):
             self.label1.setText(f'[Просрочен] {self.project["name"]}')
         
         if self.project["status"] == defines.PROJECT_DONE:
-            self.setStyleSheet(stylesheets.combine([BLACK_HIGHLIGHT, DISABLE_BORDER]))
+            #self.setStyleSheet(stylesheets.combine([stylesheets.BLACK_HIGHLIGHT, DISABLE_BORDER]))
             self.label1.setText(f'[Сдан] {self.project["name"]}')
 
     def contextMenuEvent(self, event):
