@@ -13,6 +13,9 @@ from database.work_order_parts import WorkOrderParts
 from database.storage import Storage
 from database.audit import Audit
 from database.files_logging import FilesLogging
+from database.machines import Machines
+from database.slaves import Slaves
+from database.hub import Hub
 
 import exceptions
 
@@ -35,3 +38,6 @@ class Database:
         self.storage = Storage(self)
         self.audit = Audit(self)
         self.files_logging = FilesLogging(self)
+        self.hub = Hub(self)
+        self.slaves = Slaves(self)
+        self.machines = Machines(self)    

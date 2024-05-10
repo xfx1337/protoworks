@@ -14,6 +14,67 @@ from datetime import datetime as dt
 from config import Config
 config = Config("config.ini")
 
+from common import *
+
+import socket
+from contextlib import closing
+
+import ping3
+from ping3 import ping
+ping3.EXCEPTIONS = True
+
+def get_hostname_ip(hostname, ip):
+    try:
+        r = requests.get(ip, timeout=3)
+        d["info"] = r.text
+    except:
+        pass
+
+    try:
+        hostname = gethostbyaddr(ip)
+    except:
+        pass
+    try:
+        ip = gethostbyname(hostname)[0]
+    except:
+        pass
+    
+    return hostname, ip
+
+def get_ping(ip):
+    p = -1
+    host_s = ip.split("//")[-1]
+    try:
+        if len(ip.split(":")) > 1:
+            port = ip.split(":")[-1]
+            if "//" not in port:
+                try:
+                    available = check_socket(host_s.split(":")[0], int(port))
+                except:
+                    available = False
+                if available:
+                    p = ping(host_s.split(":")[0], unit="ms", timeout=3)
+            else:
+                p = ping(host_s.split(":")[0], unit="ms", timeout=3)
+        else:
+            p = ping(host_s.split(":")[0], unit="ms", timeout=3)
+    except:
+        pass
+    
+    if p == None:
+        return -1
+    return int(p)
+
+def check_socket(host, port):
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+        if sock.connect_ex((host, port)) == 0:
+            return True
+        else:
+            return False
+
+def get_main_page():
+    return "PROTOWORKS SERVER VER0.1"
+
 def check_userlist():
     with open("userlist.txt", "r") as f:
         for line in f.readlines():

@@ -14,7 +14,8 @@ class Machines:
             x INT,
             y INT,
             Z INT,
-            port VARCHAR(255),
+            identification_id VARCHAR(255),
+            slave_id INT,
             type INT
         )
         """)

@@ -2,6 +2,7 @@ import os, shutil, sys, subprocess
 import locale
 import win32api, win32print
 import tempfile
+import requests
 
 import dateutil.parser
 
@@ -11,6 +12,9 @@ from flask import stream_with_context
 import utils
 
 import json
+
+from ping3 import ping, verbose_ping
+import socket
 
 from urllib.parse import unquote
 from urllib.parse import urlparse
@@ -122,3 +126,99 @@ def cancel_paper_printing(request):
         pass
 
     return "Отменено", 200
+
+def restart_hub(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+    
+    d = db.hub.get_hub_info()
+    ip = d["ip"]
+    r = requests.get(ip + "/api/restart")
+    return "Отправлено", 200
+
+def get_hub_info(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+    
+    d = db.hub.get_hub_info()
+    d["info"] = "NO DATA"
+    ip = d["ip"]
+    hostname = d["hostname"]
+    
+    hostname, ip = utils.get_hostname_ip(hostname, ip)
+    db.hub.set_hub_info(hostname, ip)
+
+    d["ping"] = utils.get_ping(ip)
+
+    try:
+        r = requests.get(ip, timeout=3)
+        d["info"] = r.text
+    except:
+        pass
+
+    return json.dumps(d), 200
+
+def set_hub_info(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+    
+    hostname = ""
+    ip = ""
+
+    hostname = data["hostname"]
+    ip = data["ip"]
+    
+    if hostname == "":
+        try:
+            hostname = socket.gethostbyaddr(ip)
+        except:
+            pass
+    if ip == "":
+        try:
+            ip = socket.gethostbyname(hostname)[0]
+        except:
+            pass
+
+    db.hub.set_hub_info(hostname, ip)
+    return "Успешно", 200
+
+def check_ping(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+    host = data["host"]
+    is_hostname = data["is_hostname"]
+
+    try:
+        if is_hostname:
+            host = socket.gethostbyname(host)
+        delay = utils.get_ping(host)
+    except:
+        delay = -1
+
+    return json.dumps({"ping": delay}), 200
+
+def send_get_request(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+    host = data["host"]
+    is_hostname = data["is_hostname"]
+
+    try:
+        if is_hostname:
+            host = socket.gethostbyname(host)
+        r = requests.get(host, timeout=5)
+        text = r.text
+    except:
+        text = "NO DATA"
+
+    return text, 200

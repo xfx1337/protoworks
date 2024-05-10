@@ -20,6 +20,9 @@ import services.audit
 import services.materials
 import services.hardware
 import services.parts
+import services.slaves
+
+from common import *
 
 sys.dont_write_bytecode = True # no pycache now
 
@@ -28,7 +31,7 @@ CORS(app)
 #socketio = SocketIO(app, async_mode='threading') # should be somthing like gunicorn, gevent or else...
 
 
-print("ProtoWorks server v0.1")
+print("ProtoWorks server v" + SERVER_VERSION)
 
 cfg = {}
 try: cfg = Config('config.ini')
@@ -49,6 +52,9 @@ utils.check_userlist()
 print(f"[main] running flask server")
 print("")
 
+@app.route('/', methods=['GET'])
+def main_page():
+    return utils.get_main_page(), 200
 
 @app.route('/api/valid_token', methods=['POST'])
 def valid_token():
@@ -164,6 +170,26 @@ def paper_print_get_jobs():
 def cancel_paper_printing():
     return services.hardware.cancel_paper_printing(request)
 
+@app.route('/api/hardware/get_hub_info', methods=['POST'])
+def get_hub_info():
+    return services.hardware.get_hub_info(request)
+
+@app.route('/api/hardware/set_hub_info', methods=['POST'])
+def set_hub_info():
+    return services.hardware.set_hub_info(request)
+
+@app.route('/api/hardware/restart_hub', methods=['POST'])
+def restart_hub():
+    return services.hardware.restart_hub(request)
+
+@app.route('/api/hardware/ping', methods=['POST'])
+def check_ping():
+    return services.hardware.check_ping(request)
+
+@app.route('/api/hardware/send_get_request', methods=['POST'])
+def send_get_request():
+    return services.hardware.send_get_request(request)
+
 @app.route('/api/parts/get_parts', methods=['POST'])
 def get_parts():
     return services.parts.get_parts(request)
@@ -183,6 +209,18 @@ def delete_parts():
 @app.route('/api/parts/indentify_parts', methods=['POST'])
 def indentify_parts():
     return services.parts.indentify_parts(request)
+
+@app.route('/api/slaves/add', methods=['POST'])
+def add_slave():
+    return services.slaves.add_slave(request)
+
+@app.route('/api/slaves/list', methods=['POST'])
+def get_slaves_list():
+    return services.slaves.get_slaves_list(request)
+
+@app.route('/api/slaves/edit', methods=['POST'])
+def edit_slave():
+    return services.slaves.edit(request)
 
 app.run(threaded=True, debug=False, host="0.0.0.0")
 CORS(app)

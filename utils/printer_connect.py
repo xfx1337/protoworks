@@ -3,9 +3,38 @@ import json
 from tqdm import tqdm
 import time
 from functools import reduce
-host = "http://192.168.8.46:5000"
-port = "/dev/ttyUSB1"
+import urllib.request
+import argparse
+import threading
 
+host = "http://192.168.8.46:5000"
+port = "/dev/ttyUSB0"
+
+
+parser = argparse.ArgumentParser(description='command line network serial')
+
+parser.add_argument('--host', type=str, nargs="?", default=host,
+                    help='host')
+
+parser.add_argument('--port', type=str, nargs="?", default=port,
+                    help='port')
+
+args = parser.parse_args()
+host = args.host
+port = args.port
+
+def read_thread():
+    req = urllib.request.Request(host + "/api/machines/read_stream")
+    req.add_header('port', port)
+    data = urllib.request.urlopen(req) # it's a file like object and works just like a file
+    for line in data: # files are iterable
+        print(str(line.decode("utf-8")))
+
+def connect():
+    r = requests.post(host + "/api/machines/connect", json={"port": port})
+    if r.status_code != 200:
+        print("connect failed")
+        exit()
 
 def checksum(command):
     return reduce(lambda x, y: x ^ y, map(ord, command))
@@ -44,7 +73,7 @@ def read(ret=False):
 
 def start_exec_file(file):
     with open(file, "r") as f:
-        send("M28 " + file)
+        #send("M28 " + file)
         lines = f.readlines()
         lines_c = []
         k = 0
@@ -62,11 +91,15 @@ def start_exec_file(file):
             if lines[i] == "\n":
                 k+=1
                 continue
-            lines_c.append(convert2(lines[i].replace("\n", ""), i-k+1))
-        breakpoint()
+            #lines_c.append(convert2(lines[i].replace("\n", ""), i-k+1))
+            lines_c.append(lines[i].replace("\n", ""))
         send_lines(lines_c)
 
-        send("M29")
+        #send("M29")
+
+connect()
+
+threading.Thread(target=read_thread, daemon=True).start()
 
 while True:
     inp = input(port + " >>> ")
@@ -76,10 +109,14 @@ while True:
     if inp == "exit":
         exit()
 
+    if inp == "cancel":
+        send("CANCEL_JOB")
+        send("M77")
+
     if inp.startswith("start"):
         if len(inp.split()) > 1:
             start_exec_file(inp.split()[-1])
         continue
-
-    send(inp)
-    read()
+    if inp != "" and inp != "\n":
+        send(inp)
+    #read()
