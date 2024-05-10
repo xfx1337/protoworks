@@ -18,10 +18,13 @@ from UI.widgets.QInitButton import QInitButton
 from UI.widgets.QPathInput import QPathInput
 from UI.widgets.QUserInput import QUserInput
 from UI.widgets.QYesOrNoDialog import QYesOrNoDialog
+from UI.widgets.QSelectOneFromList import QSelectOneFromList
 
 from UI.tabs.machines_tab.AddSlaveWindow import AddSlaveWindow
 from UI.tabs.machines_tab.HubSettingsWindow import HubSettingsWindow
 from UI.tabs.machines_tab.SlavesListWindow import SlavesListWindow
+from UI.tabs.machines_tab.AddMachineWindow import AddMachineWindow
+from UI.tabs.machines_tab.MachinesListWindow import MachinesListWindow
 
 import defines
 
@@ -41,6 +44,7 @@ from PySide6.QtCore import Signal, QObject
 class GetInfo(QObject):
     hub_info = Signal(dict)
     change_slaves_count = Signal(dict)
+    change_machines_count = Signal(dict)
 
 class MachinesWidget(QWidget, Tab):
     def __init__(self):
@@ -49,6 +53,7 @@ class MachinesWidget(QWidget, Tab):
         self.get_data_signals = GetInfo()
         self.get_data_signals.hub_info.connect(self.set_hub_info)
         self.get_data_signals.change_slaves_count.connect(self.change_slaves_count_ui)
+        self.get_data_signals.change_machines_count.connect(self.change_machines_count_ui)
 
         self.machines_entries = []
 
@@ -192,6 +197,7 @@ class MachinesWidget(QWidget, Tab):
         info = env.net_manager.hardware.get_hub_info()
         self.get_data_signals.hub_info.emit(info)
         self.get_slaves_count()
+        self.get_machines_count()
 
     def get_slaves_count(self):
         data = env.net_manager.slaves.get_slaves_list()
@@ -203,6 +209,16 @@ class MachinesWidget(QWidget, Tab):
                self.get_data_signals.change_slaves_count.emit({"online": on+1, "all": len(data["slaves"])})
                on += 1
 
+    def get_machines_count(self):
+        data = env.net_manager.machines.get_machines_list()
+        self.get_data_signals.change_machines_count.emit({"online": 0, "all": len(data["machines"])})
+        on = 0
+        for s in data["machines"]:
+           status = env.net_manager.machines.check_online(s["id"])["status"]
+           if status == "Printing" or status == "Operational":
+               self.get_data_signals.change_machines_count.emit({"online": on+1, "all": len(data["machines"])})
+               on += 1
+
     def change_slaves_count_ui(self, dc):
         on = dc["online"]
         allx = dc["all"]
@@ -211,6 +227,15 @@ class MachinesWidget(QWidget, Tab):
             self.slaves_status_label.setStyleSheet(UI.stylesheets.GREEN_HIGHLIGHT)
         else:
             self.slaves_status_label.setStyleSheet(UI.stylesheets.YELLOW_HIGHLIGHT)
+
+    def change_machines_count_ui(self, dc):
+        on = dc["online"]
+        allx = dc["all"]
+        self.machines_status_label.setText(f"Станки. Состояние: {on}/{allx} Онлайн")
+        if on == allx:
+            self.machines_status_label.setStyleSheet(UI.stylesheets.GREEN_HIGHLIGHT)
+        else:
+            self.machines_status_label.setStyleSheet(UI.stylesheets.YELLOW_HIGHLIGHT)
 
     def update_data(self):
         env.task_manager.run_silent_task(self.get_data)
@@ -230,14 +255,30 @@ class MachinesWidget(QWidget, Tab):
             utils.message("Команда отправлена.")
 
     def restart_slaves(self):
-        pass
+        self.dlg = QYesOrNoDialog("Вы действительно хотите перезапустить все слейвы?")
+        self.dlg.exec()
+        if self.dlg.answer:
+            data = env.net_manager.slaves.get_slaves_list()
+            for s in data["slaves"]:
+                env.net_manager.slaves.restart(s["id"])
+            utils.message("Запросы отправлены.", tittle="Оповещение")
     
     def restart_machines(self):
         pass
     
     def add_machine(self):
-        pass
+        slaves = env.net_manager.slaves.get_slaves_list()["slaves"]
+        ids = []
+        for i in range(len(slaves)):
+            ids.append(str(slaves[i]["id"]))
+
+        self.slave_selector = QSelectOneFromList("Выберите слейв, к которому будете подключать принтер", ids, self.slave_chosen)
+        self.slave_selector.show()
     
+    def slave_chosen(self, idx):
+        wnd = AddMachineWindow(idx)
+        wnd.show()
+
     def add_slave(self):
         wnd = AddSlaveWindow()
         wnd.show()
@@ -247,7 +288,8 @@ class MachinesWidget(QWidget, Tab):
         self.wnd.show()
     
     def open_machine_list(self):
-        pass 
+        self.wnd = MachinesListWindow()
+        self.wnd.show()
 
     def pause_machines(self):
         pass

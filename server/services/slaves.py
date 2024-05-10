@@ -58,6 +58,16 @@ def get_slaves_list(request):
 
     return json.dumps({"slaves": ret}), 200
 
+def get_slave(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+    
+    idx = data["id"]
+    slave = db.slaves.get_slave(idx)
+    return json.dumps({"slave": slave}), 200
+
 def edit(request):
     data = request.get_json()
     ret = db.users.valid_token(data["token"])
@@ -70,3 +80,39 @@ def edit(request):
 
     db.slaves.edit(idx, ip, hostname)
     return "Успешно", 200
+
+def restart(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+
+    idx = data["id"]
+    slave = db.slaves.get_slave(idx)
+    r = requests.get(slave['ip'] + "/api/restart")
+    return "Запрос отправлен", 200
+
+
+def send_request(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+
+    idx = data["id"]
+    link = data["link"]
+    data_sent = {}
+    if "data" in data:
+        data_sent = data["data"]
+    method = data['method']
+
+    slave = db.slaves.get_slave(idx)
+
+    if method == 'POST':
+        r = requests.post(slave["ip"] + link, json=data_sent)
+    elif method == 'GET':
+        r = requests.get(slave['ip'] + link)
+    else:
+        return "Method not implemented", 405
+    
+    return r.text, 200

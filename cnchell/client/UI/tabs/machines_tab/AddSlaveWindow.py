@@ -47,8 +47,8 @@ class AddSlaveWindow(QWidget):
         self.label = QLabel("Здесь вы можете добавить слейв в систему CNCHell. Слейв - устройство, позволяющее подключить больше станков к CNCHell-Hub")
         self.layout.addWidget(self.label)
 
-        self.notes_label = QLabel("Если вы настраиваете слейв на Octoprint'е или Klipper'е - не указывайте порт. Порт нужно будет указать при создании станков")
-        self.layout.addWidget(self.notes_label)
+        #self.notes_label = QLabel("Если вы настраиваете слейв на Octoprint'е или Klipper'е - не указывайте порт. Порт нужно будет указать при создании станков")
+        #self.layout.addWidget(self.notes_label)
 
         self.host_layout = QHBoxLayout()
         self.host_input = QUserInput("Локальный хост(http://ip:port): ", corner_align=True)
@@ -88,6 +88,7 @@ class AddSlaveWindow(QWidget):
         s_type = SLAVES_TYPES_TRANSLATIONS_BACKWARDS[self.type_choose.get_selected()[0]]
         env.net_manager.slaves.add_slave(ip, hostname, s_type)
         utils.message("Добавлен", tittle="Оповещение")
+        self.close()
 
     def change_ping_state(self, delay):
         self.ping_btn.setEnabled(True)

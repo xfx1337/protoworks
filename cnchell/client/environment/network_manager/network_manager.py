@@ -10,6 +10,7 @@ from environment.network_manager.parts import Parts
 from environment.network_manager.materials import Materials
 from environment.network_manager.hardware import Hardware
 from environment.network_manager.slaves import Slaves
+from environment.network_manager.machines import Machines
 
 import exceptions
 
@@ -31,6 +32,7 @@ class NetworkManager:
         self.materials = Materials(self)
         self.hardware = Hardware(self)
         self.slaves = Slaves(self)
+        self.machines = Machines(self)
 
         self._auto_login = False
 

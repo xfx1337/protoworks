@@ -41,13 +41,13 @@ class QAskForFilesDialog(QDialog):
             fnames = QFileDialog.getOpenFileNames(
                 self,
                 "Выбрать",
-                "ProtoWorks",
+                "CNCHell",
             )
         else:
             fnames = QFileDialog.getOpenFileName(
                 self,
                 "Выбрать",
-                "ProtoWorks",
+                "CNCHell",
             )
             
             

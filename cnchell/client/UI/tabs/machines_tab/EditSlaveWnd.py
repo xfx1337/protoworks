@@ -74,8 +74,8 @@ class EditSlaveWnd(QWidget):
 
 
 
-        self.notes_label = QLabel("Если вы настраиваете слейв на Octoprint'е или Klipper'е - не указывайте порт. Порт нужно будет указать при создании станков")
-        self.layout.addWidget(self.notes_label)
+        #self.notes_label = QLabel("Если вы настраиваете слейв на Octoprint'е или Klipper'е - не указывайте порт. Порт нужно будет указать при создании станков")
+        #self.layout.addWidget(self.notes_label)
 
         self.host_layout = QHBoxLayout()
         self.ip_input = QUserInput("Локальный хост(http://ip:port): ", corner_align=True)
@@ -103,6 +103,7 @@ class EditSlaveWnd(QWidget):
         
         env.net_manager.slaves.edit_slave(self.slave["id"], ip, hostname)
         utils.message("Изменено", tittle="Оповещение")
+        self.close()
 
     def change_ping_state(self, delay):
         self.ping_btn.setEnabled(True)

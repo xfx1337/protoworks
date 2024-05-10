@@ -74,25 +74,36 @@ class SlaveListEntry(QFrame):
         self.menu.setStyleSheet(stylesheets.DEFAULT_BORDER_STYLESHEET)
         action_ping = self.menu.addAction("Проверить")
         action_info = self.menu.addAction("Получить информацию")
+        action_restart = self.menu.addAction("Перезапустить")
         action_get_machines = self.menu.addAction("Получить список станков")
         action_edit = self.menu.addAction("Редактировать")
         action_delete = self.menu.addAction("Удалить")
 
         action_ping.triggered.connect(self.ping_host)
         action_info.triggered.connect(self.define)
+        action_restart.triggered.connect(self.restart)
         action_get_machines.triggered.connect(self.get_machines_list)
         action_edit.triggered.connect(self.edit)
         action_delete.triggered.connect(self.delete_slave)
 
         self.setLayout(self.layout)
 
+    def restart(self):
+        self.dlg = QYesOrNoDialog("Вы действительно хотите перезапустить слейв?")
+        self.dlg.exec()
+        if self.dlg.answer:
+            env.net_manager.slaves.restart(self.slave["id"])
+            utils.message("Запрос отправлен.", tittle="Оповещение")
+
     def set_ping(self, ping):
         if int(ping) == -1:
             ping = "Соединение не удалось"
+            self.ping_label.setStyleSheet(stylesheets.RED_HIGHTLIGHT)
         elif int(ping) == -2:
             ping = "Ожидание ответа"
         self.slave["ping"] = ping
         self.ping_label.setText(f"Задержка {str(ping)} мс.")
+        self.ping_label.setStyleSheet(stylesheets.NO_HIGHLIGHT)
 
     def edit(self):
         wnd = EditSlaveWnd(self.slave)

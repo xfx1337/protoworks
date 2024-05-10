@@ -71,6 +71,8 @@ PART_PRODUCTION = 1 # printing/milling
 PART_IN_WORK = 2 # cad
 PART_IN_COORDINATION = 3 # waiting
 
-FDM = 0
-SLA = 1
-MIL = 2
+FDM_OCTO = 0
+FDM_KLIPPER = 1
+FDM_DIRECT = 2
+SLA = 3
+MILL = 4

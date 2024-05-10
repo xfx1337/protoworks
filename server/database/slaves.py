@@ -36,3 +36,9 @@ class Slaves:
     def edit(self, idx, ip, hostname):
         self.cursor.execute(f"UPDATE slaves SET ip='{ip}', hostname='{hostname}' WHERE id={str(idx)}")
         self.connection.commit()
+    
+    def get_slave(self, idx):
+        self.cursor.execute(f"SELECT * FROM slaves WHERE id={idx}")
+        s = self.cursor.fetchone()
+        slave = {"id": s[0], "hostname": s[1], "ip": s[2], "type": s[3]}
+        return slave

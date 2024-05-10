@@ -21,6 +21,7 @@ import services.materials
 import services.hardware
 import services.parts
 import services.slaves
+import services.machines
 
 from common import *
 
@@ -210,6 +211,7 @@ def delete_parts():
 def indentify_parts():
     return services.parts.indentify_parts(request)
 
+
 @app.route('/api/slaves/add', methods=['POST'])
 def add_slave():
     return services.slaves.add_slave(request)
@@ -221,6 +223,63 @@ def get_slaves_list():
 @app.route('/api/slaves/edit', methods=['POST'])
 def edit_slave():
     return services.slaves.edit(request)
+
+@app.route('/api/slaves/restart', methods=['POST'])
+def restart_slave():
+    return services.slaves.restart(request)
+
+@app.route('/api/slaves/send_request', methods=['POST'])
+def send_slave_request():
+    return services.slaves.send_request(request)
+
+@app.route('/api/slaves/get', methods=['POST'])
+def get_slave():
+    return services.slaves.get_slave(request)
+
+
+@app.route('/api/machines/check_online', methods=['POST'])
+def check_online():
+    return services.machines.check_online(request)
+
+@app.route('/api/machines/add', methods=['POST'])
+def add_machine():
+    return services.machines.add_machine(request)
+
+@app.route('/api/machines/edit', methods=['POST'])
+def edit_machine():
+    return sevices.machines.edit_machine(request)
+
+@app.route('/api/machines/list', methods=['POST'])
+def list_machines():
+    return services.machines.list_machines(request)
+
+@app.route('/api/machines/restart_handler', methods=['POST'])
+def restart_handler():
+    return services.machines.restart_handler(request)
+
+@app.route('/api/machines/reconnect', methods=['POST'])
+def reconnect():
+    return services.machines.reconnect(request)
+
+@app.route('/api/machines/send_request', methods=['POST'])
+def send_command():
+    return services.machines.send_request(request)
+
+@app.route('/api/machines/send_gcode', methods=['POST'])
+def send_gcode():
+    return services.machines.send_gcode(request)
+
+@app.route('/api/machines/cancel_job', methods=['POST'])
+def cancel_job():
+    return services.machines.cancel_job(request)
+
+@app.route('/api/machines/upload_gcode', methods=['POST'])
+def upload_gcode():
+    return services.machines.upload_gcode(request)
+
+@app.route('/api/machines/start_job', methods=['POST'])
+def start_job():
+    return services.machines.start_job(request)
 
 app.run(threaded=True, debug=False, host="0.0.0.0")
 CORS(app)

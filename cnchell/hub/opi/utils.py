@@ -9,3 +9,4 @@ def list_serial():
 
 def get_main_page():
     return "CNCHell HUB VER0.1"
+    
