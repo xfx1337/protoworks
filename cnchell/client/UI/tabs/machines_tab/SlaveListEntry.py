@@ -51,21 +51,19 @@ class SlaveListEntry(QFrame):
         type_s = slave["type"]
         type_ss = defines.SLAVES_TYPES_TRANSLATIONS[type_s]
         ping_s = slave["ping"]
-
-        if int(ping_s) == -1:
-            ping_s = "Соединение не удалось"
-        if int(ping_s) == -2:
-            ping_s = "Ожидание ответа"
+        status = slave["status"]
 
         self.id_label = QLabel(f"Слейв {idx}")
         self.hostname_label = QLabel(f"Хостнейм: {hostname}")
         self.ip_label = QLabel(f"IP: {ip}")
+        self.status_label = QLabel(f"Состояние: {status}")
         self.ping_label = QLabel(f"Задержка: {ping_s} мс.")
         self.type_label = QLabel(f"Тип: {type_ss}")
 
         self.layout.addWidget(self.id_label)
         self.layout.addWidget(self.hostname_label)
         self.layout.addWidget(self.ip_label)
+        self.layout.addWidget(self.status_label)
         self.layout.addWidget(self.ping_label)
         self.layout.addWidget(self.type_label)
 
@@ -96,14 +94,7 @@ class SlaveListEntry(QFrame):
             utils.message("Запрос отправлен.", tittle="Оповещение")
 
     def set_ping(self, ping):
-        if int(ping) == -1:
-            ping = "Соединение не удалось"
-            self.ping_label.setStyleSheet(stylesheets.RED_HIGHTLIGHT)
-        elif int(ping) == -2:
-            ping = "Ожидание ответа"
-        self.slave["ping"] = ping
         self.ping_label.setText(f"Задержка {str(ping)} мс.")
-        self.ping_label.setStyleSheet(stylesheets.NO_HIGHLIGHT)
 
     def edit(self):
         wnd = EditSlaveWnd(self.slave)
@@ -119,10 +110,7 @@ class SlaveListEntry(QFrame):
         self.menu.exec(event.globalPos())
 
     def change_ping_state(self, delay):
-        if delay != -1:
-            self.ping_label.setText("Задержка: " + str(delay) + "мс.")
-        else:
-            self.ping_label.setText("Соединение не удалось")
+        self.ping_label.setText("Задержка: " + str(delay) + "мс.")
 
     def ping_host(self):
         env.task_manager.run_silent_task(self.ping_thread)

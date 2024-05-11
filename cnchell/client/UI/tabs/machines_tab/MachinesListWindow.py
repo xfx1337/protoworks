@@ -84,7 +84,6 @@ class MachinesListWindow(QWidget):
                 p.setParent(None)
 
         self.machine_entries = []
-
         machines = data["machines"]
         machines = sorted(machines, key=lambda key: (key["slave_id"]))
 

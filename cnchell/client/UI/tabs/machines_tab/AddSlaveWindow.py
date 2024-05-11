@@ -92,10 +92,7 @@ class AddSlaveWindow(QWidget):
 
     def change_ping_state(self, delay):
         self.ping_btn.setEnabled(True)
-        if delay != -1:
-            self.ping_btn.setText("Задержка: " + str(delay) + "мс. Проверить снова")
-        else:
-            self.ping_btn.setText("Соединение не удалось")
+        self.ping_btn.setText("Задержка: " + str(delay) + "мс. Проверить снова")
 
     def ping_host(self):
         self.ping_btn.setEnabled(False)

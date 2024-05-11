@@ -1,11 +1,15 @@
 import os, sys
 import socket
 import json
+import requests
 
 from flask import Flask, jsonify, request, Response
-from flask_socketio import SocketIO, emit, send, Namespace
+from flask_socketio import SocketIO, emit, send
 from flask_socketio import ConnectionRefusedError
 from flask_cors import CORS
+
+import threading
+import time
 
 from exceptions import *
 import utils
@@ -22,15 +26,14 @@ import services.hardware
 import services.parts
 import services.slaves
 import services.machines
+import services.monitoring
 
 from common import *
 
 sys.dont_write_bytecode = True # no pycache now
 
 app = Flask(__name__)
-CORS(app)
-#socketio = SocketIO(app, async_mode='threading') # should be somthing like gunicorn, gevent or else...
-
+socketio = SocketIO(app)
 
 print("ProtoWorks server v" + SERVER_VERSION)
 
@@ -52,6 +55,24 @@ utils.check_userlist()
 
 print(f"[main] running flask server")
 print("")
+
+
+db.monitoring.clear_db()
+services.monitoring.update_monitoring({"device": "MAIN_HUB", "status": "offline"})
+
+def main_hub_watchdog():
+    print("[main] running main hub watch dog")
+    while True:
+        st = db.monitoring.get_device("MAIN_HUB")["status"]
+        if st == "online":
+            pass
+        else:
+            services.hardware.send_hub_command("/api/server_ip_update", {"server": utils.get_local_ip()})
+
+        time.sleep(3)
+
+mhd = threading.Thread(target=main_hub_watchdog)
+mhd.start()
 
 @app.route('/', methods=['GET'])
 def main_page():
@@ -253,6 +274,10 @@ def edit_machine():
 def list_machines():
     return services.machines.list_machines(request)
 
+@app.route('/api/machines/get_machine', methods=['POST'])
+def get_machine():
+    return services.machines.get_machine(request)
+
 @app.route('/api/machines/restart_handler', methods=['POST'])
 def restart_handler():
     return services.machines.restart_handler(request)
@@ -281,6 +306,28 @@ def upload_gcode():
 def start_job():
     return services.machines.start_job(request)
 
-app.run(threaded=True, debug=False, host="0.0.0.0")
-CORS(app)
-#socketio.run(app)
+@app.route('/api/hardware/restart_all', methods=['POST'])
+def restart_all():
+    services.hardware.hub_setup_all_machines()
+    return "sent", 200
+
+@socketio.on("send_monitoring_update")
+def check_online(message):
+    services.monitoring.update_monitoring(json.loads(message))
+    emit('ret', {'data': 'got it.'})
+
+@socketio.on('connect')
+def connect():
+    print("main hub connected")
+    services.monitoring.update_monitoring({"device": "MAIN_HUB", "status": "online"})
+    emit('ret', {'data': "connected"})
+    conf = services.monitoring.get_monitoring_configuration()
+    services.hardware.send_hub_command("/api/set_monitoring_configuration", {"conf": conf})
+
+@socketio.on('disconnect')
+def disconnect():
+    print("main hub disconnected")
+    services.monitoring.update_monitoring({"device": "MAIN_HUB", "status": "offline"})
+
+
+socketio.run(app, debug=True, host="0.0.0.0")

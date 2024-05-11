@@ -6,84 +6,44 @@ from flask import stream_with_context
 import utils
 
 import json
+import requests
 
-from environment.environment import Environment
-env = Environment()
+def ui_fix(unique_info):
+    breakpoint()
+    return json.loads(unique_info.replace("'", '"'))
 
-def get_available_machines(request):
-    machines = utils.list_serial()
-    return json.dumps({"machines": machines}), 200
-
-def send_line(request):
-    data = request.get_json()
-    line = data["line"]
-    port = data["port"]
-
-    try: 
-        env.machines.send_line(line, port)
-        return "sent", 200
-    except Exception as e:
-        return str(e), 500
-
-def connect(request):
-    data = request.get_json()
-    port = data["port"]
-    env.machines.connect_machine(port)
-    return "done", 200
-
-def disconnect(request):
-    data = request.get_json()
-    port = data["port"]
-    state = False
-    try:
-        state = env.machines.state(port)
-    except:
-        pass
-
-    if state:
-        env.machines.close(port)
-        return "disconnected", 200
+def send_request(ip, link, data={}, method='POST', ret_text=False):
+    if method == "POST":
+        try:
+            r = requests.post(ip + link, 
+            json=data)
+        except:
+            return -1
     else:
-        return "already disconnected", 200
+        try:
+            r = requests.get(ip + link)
+        except:
+            return -1
 
-def get_state(request):
-    data = request.get_json()
-    port = data["port"]
+    if not ret_text:
+        return r.json()
+    return r.text
 
-    try:
-        state = env.machines.state(port)
-        return json.dumps({"state": state}), 200
-    except Exception as e:
-        return str(e), 500
+def check_status(ip, idx):
+    r = send_request(ip, "/api/machines/check_online", {"id": idx})
+    if r != -1:
+        return r["status"]
 
-def read(request):
-    data = request.get_json()
-    port = data["port"]
+def check_work_status(ip, idx):
+    r = send_request(ip, "/api/machines/check_work_status", {"id": idx})
+    if r != -1:
+        return r["status"]
 
-    try:
-        data = env.machines.read(port)
-        return json.dumps({"data": data}), 200
-    except Exception as e:
-        return str(e), 500
+def check_envinronment(ip, idx):
+    r = send_request(ip, "/api/machines/check_envinronment", {"id": idx})
+    if r != -1:
+        return r["envinronment"]
 
-def send_line(request):
-    data = request.get_json()
-    port = data["port"]
-    line = data["line"]
-
-    try:
-        env.machines.send_line(line, port)
-        return "sent", 200
-    except Exception as e:
-        return str(e), 500
-
-def send_lines(request):
-    data = request.get_json()
-    port = data["port"]
-    lines = data["lines"]
-
-    try:
-        env.machines.send_line(lines, port)
-        return "sent", 200
-    except Exception as e:
-        return str(e), 500
+def setup_all(data):
+    for s in data:
+        r = send_request(s["ip"], "/api/machines/setup_all", {"machines": s["machines"]}, ret_text=True)

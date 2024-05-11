@@ -26,6 +26,7 @@ from UI.widgets.QYesOrNoDialog import QYesOrNoDialog
 from UI.widgets.QAskForFilesDialog import QAskForFilesDialog
 
 import defines
+from defines import *
 
 from PySide6.QtCore import Signal, QObject
 import time
@@ -57,6 +58,9 @@ class MachineListEntry(QFrame):
         plate = machine["plate"]
         delta = machine["delta"]
         unique_info = machine["unique_info"]
+        status = machine["status"]
+        working_state = machine["work_status"]
+
 
         self.machine_name_label = QLabel(name)
         self.machine_idx_label = QLabel(f"ID: {str(idx)}")
@@ -68,7 +72,8 @@ class MachineListEntry(QFrame):
         else:
             self.machine_plate_label = QLabel(f"Стол XYZ: {str(plate)}")
 
-        self.machine_status_label = QLabel(f"Состояние: Ожидание данных")
+        self.machine_status_label = QLabel(f"Состояние: {status}")
+        self.machine_work_status_label = QLabel(f"Состояние работы: {working_state}")
         #self.machine_unique_info_label = QLabel(f"Информация: {str(unique_info)}")
 
 
@@ -77,6 +82,25 @@ class MachineListEntry(QFrame):
         self.layout.addWidget(self.machine_slave_idx_label)
         self.layout.addWidget(self.machine_plate_label)
         self.layout.addWidget(self.machine_status_label)
+        self.layout.addWidget(self.machine_work_status_label)
+
+        if self.slave["type"] in [FDM_OCTO, FDM_KLIPPER, FDM_DIRECT]:
+            if "info" in self.machine:
+                if "envinronment" in self.machine["info"]:
+                    try:
+                        tempertures = self.machine["info"]["envinronment"]["temperature"]
+                        actual = tempertures["bed"]["actual"]
+                        target = tempertures["bed"]["target"]
+                        actual_t = tempertures["tool0"]["actual"]
+                        target_t = tempertures["tool0"]["target"]
+
+                        self.bed_temp_label = QLabel(f"Температура стола {actual}/{target}")
+                        self.extruder_temp_label = QLabel(f"Температура сопла {actual_t}/{target_t}")
+                        self.layout.addWidget(self.bed_temp_label)
+                        self.layout.addWidget(self.extruder_temp_label)
+                    except:
+                        pass
+
         #self.layout.addWidget(self.machine_unique_info_label)
 
 
@@ -115,7 +139,7 @@ class MachineListEntry(QFrame):
         self.dlg.exec()
         if self.dlg.answer:
             env.net_manager.machines.cancel_job(self.slave["id"], self.machine["id"])
-            utils.message("Запрос отправлн", tittle="Оповещение")
+            utils.message("Запрос отправлен", tittle="Оповещение")
 
     # def auto_update(self):
     #     while self.isVisible():
@@ -123,14 +147,37 @@ class MachineListEntry(QFrame):
         
     #     #env.net_manager.get_all_machines_states()
 
-    def status_changed_ui(self, status):
-        self.machine_status_label.setText("Состояние: " + status)
+    def status_changed_ui(self):
+        self.machine_status_label.setText("Состояние: " + self.machine["status"])
+        working_state = self.machine["work_status"]
+        self.machine_work_status_label.setText(f"Состояние работы: {working_state}")
+        if self.slave["type"] in [FDM_OCTO, FDM_KLIPPER, FDM_DIRECT]:
+            if "info" in self.machine:
+                if "envinronment" in self.machine["info"]:
+                    try:
+                        tempertures = self.machine["info"]["envinronment"]["temperature"]
+                        actual = tempertures["bed"]["actual"]
+                        target = tempertures["bed"]["target"]
+                        actual_t = tempertures["tool0"]["actual"]
+                        target_t = tempertures["tool0"]["target"]
+
+                        try:
+                            self.bed_temp_label.setText(f"Температура стола {actual}/{target}")
+                            self.extruder_temp_label.setText(f"Температура сопла {actual_t}/{target_t}")
+                        except:
+                            self.bed_temp_label = QLabel(f"Температура стола {actual}/{target}")
+                            self.extruder_temp_label = QLabel(f"Температура сопла {actual_t}/{target_t}")
+                            self.layout.addWidget(self.bed_temp_label)
+                            self.layout.addWidget(self.extruder_temp_label)
+                    except:
+                        pass
+
 
     def check_online_thread(self):
         while True:
             try:
-                status = env.net_manager.machines.check_online(self.machine["id"])["status"]
-                self.ping_signals.status_changed.emit(status)
+                self.machine = env.net_manager.machines.get_machine(self.machine["id"])
+                self.ping_signals.status_changed.emit(self.machine["status"])
             except: 
                 self.ping_signals.status_changed.emit("Нет соединения")
             time.sleep(3)
@@ -173,10 +220,6 @@ class MachineListEntry(QFrame):
             utils.message("Запрос отправлен.", tittle="Оповещение")
 
     def set_ping(self, ping):
-        if int(ping) == -1:
-            ping = "Соединение не удалось"
-        elif int(ping) == -2:
-            ping = "Ожидание ответа"
         self.slave["ping"] = ping
         self.ping_label.setText(f"Задержка {str(ping)} мс.")
 
@@ -194,10 +237,7 @@ class MachineListEntry(QFrame):
         self.menu.exec(event.globalPos())
 
     def change_ping_state(self, delay):
-        if delay != -1:
-            self.ping_label.setText("Задержка: " + str(delay) + "мс.")
-        else:
-            self.ping_label.setText("Соединение не удалось")
+        self.ping_label.setText("Задержка: " + str(delay) + "мс.")
 
     def ping_host(self):
         env.task_manager.run_silent_task(self.ping_thread)

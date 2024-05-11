@@ -11,6 +11,9 @@ import subprocess
 import requests
 from requests_toolbelt import MultipartEncoder
 import re
+import threading
+import time
+thread_event = threading.Event()
 
 from flask import Flask, jsonify, request, Response
 #from flask_socketio import SocketIO, emit, send, Namespace
@@ -123,6 +126,42 @@ def get_running_port(idx):
             port = f.readline()
     return port
 
+def restart_handler_back(unique_info, idx):
+    port = get_port_by_unique_info(unique_info)
+    if port == None:
+        return "machine not connected", 300
+
+    if not os.path.isdir("octo_instances"):
+        os.mkdir("octo_instances")
+    
+    script_name = f"{idx}.txt"
+    if os.path.exists(f"octo_instances/{script_name}"):
+        try:
+            kill_octo(idx)
+        except:
+            pass
+    try:
+        os.remove(f"octo_instances/{script_name}")
+    except:
+        pass
+    with open(f"octo_instances/{script_name}", "w") as f:
+        f.write(port)
+
+    write_octo(idx)
+    run_octo(idx, port)
+
+def reconnect_handler_back(idx, baudrate):
+    script_name = f"{idx}.txt"
+    port = None
+    if os.path.exists(f"octo_instances/{script_name}"):
+        with open(f"octo_instances/{script_name}", "r") as f:
+            port = f.readline()
+    if port == None:
+        return "couldn't connect", 500
+    
+    tx = octo_command(idx, "/api/connection", {"command": "connect", "port": port, "baudrate": int(baudrate), "printerProfile": "_default", "save": True, "autoconnect": True}, ret_text=True)
+
+
 print("opi octo slave server v0.1")
 
 
@@ -166,28 +205,7 @@ def restart_handler():
     unique_info = data["unique_info"]
     idx = data["id"]
 
-    port = get_port_by_unique_info(unique_info)
-    if port == None:
-        return "machine not connected", 300
-
-    if not os.path.isdir("octo_instances"):
-        os.mkdir("octo_instances")
-    
-    script_name = f"{idx}.txt"
-    if os.path.exists(f"octo_instances/{script_name}"):
-        try:
-            kill_octo(idx)
-        except:
-            pass
-    try:
-        os.remove(f"octo_instances/{script_name}")
-    except:
-        pass
-    with open(f"octo_instances/{script_name}", "w") as f:
-        f.write(port)
-
-    write_octo(idx)
-    run_octo(idx, port)
+    restart_handler_back(unique_info, idx)
 
     return "done", 200
 
@@ -197,20 +215,11 @@ def machine_reconnect():
         return "no instances running", 300
     
     data = request.get_json()
-    unique_info = data["unique_info"]
     idx = data["id"]
     baudrate = data["baudrate"]
 
-    script_name = f"{idx}.txt"
-    port = None
-    if os.path.exists(f"octo_instances/{script_name}"):
-        with open(f"octo_instances/{script_name}", "r") as f:
-            port = f.readline()
-    if port == None:
-        return "couldn't connect", 500
+    reconnect_handler_back(idx, baudrate)
     
-    tx = octo_command(idx, "/api/connection", {"command": "connect", "port": port, "baudrate": int(baudrate), "printerProfile": "_default", "save": True, "autoconnect": True}, ret_text=True)
-
     return "done", 200
 
 @app.route('/api/machines/send_gcode', methods=['POST'])
@@ -233,16 +242,35 @@ def send():
 @app.route('/api/machines/check_online', methods=['POST'])
 def check_online():
     if not os.path.isdir("octo_instances"):
-        return "no instances running", 300
+        return json.dumps({"status": "offline"}), 200
     
     data = request.get_json()
-    unique_info = data["unique_info"]
     idx = data["id"]
     if not get_running_port(idx):
-        return "not running", 300
+        return json.dumps({"status": "offline"}), 200
+
+    return json.dumps({"status": "online"}), 200
+
+@app.route('/api/machines/check_work_status', methods=['POST'])
+def check_work_status():
+    if not os.path.isdir("octo_instances"):
+        return json.dumps({"status": "offline"}), 200
+    
+    data = request.get_json()
+    idx = data["id"]
 
     ret = octo_command(idx, "/api/connection", {}, method='GET')
     return json.dumps({"status": ret["current"]["state"]}), 200
+
+@app.route('/api/machines/check_envinronment', methods=['POST'])
+def check_envinronment():
+    if not os.path.isdir("octo_instances"):
+        return json.dumps({"status": "offline"}), 200
+    
+    data = request.get_json()
+    idx = data["id"]
+    ret = octo_command(idx, "/api/printer", {}, method='GET')
+    return json.dumps({"envinronment": ret}), 200
 
 @app.route('/api/machines/cancel_job', methods=['POST'])
 def cancel_job():
@@ -308,6 +336,36 @@ def start_job():
 
     ret = octo_command(idx, f"/api/files/local/{file}", {"command": "select", "print": True})
     return ret, 200
+
+def connect_all(machines):
+    while thread_event.is_set():
+        for m in machines:
+            while True:
+                try:
+                    ret = octo_command(m["id"], "/api/server", {}, method='GET')
+                    break
+                except: pass
+                time.sleep(2)
+            try:
+                reconnect_handler_back(m["id"], m["baudrate"])
+            except:
+                pass
+        break
+
+@app.route('/api/machines/setup_all', methods=['POST'])
+def setup_all():
+    data = request.get_json()
+    machines = data["machines"]
+
+    for m in machines:
+        restart_handler_back(m["unique_info"], m["id"])
+
+    thread_event.set()
+
+    t = threading.Thread(target=connect_all, args=(machines, ))
+    t.start()
+
+    return "sent", 200
 
 app.run(threaded=True, debug=False, host="0.0.0.0", port=3719)
 CORS(app)

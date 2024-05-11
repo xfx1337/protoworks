@@ -71,7 +71,41 @@ def list_machines(request):
         slave_idx = -1
     
     ret = db.machines.get_machines_list(slave_idx)
+
+    for m in ret:
+        m["status"] = "N/A"
+        m["work_status"] = "N/A"
+        m["info"] = {}
+        try:
+            d = db.monitoring.get_device("MACHINE" + str(m["id"]))
+            m["status"] = d["status"]
+            m["work_status"] = d["info"]["work_status"]
+            m["info"] = d["info"]
+        except:
+            pass
+
     return json.dumps({"machines": ret}), 200
+
+def get_machine(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+
+    idx = data["id"]
+    machine = db.machines.get_machine(int(idx))
+    machine["status"] = "N/A"
+    machine["work_status"] = "N/A"
+    machine["info"] = {}
+    try:
+        d = db.monitoring.get_device("MACHINE" + str(machine["id"]))
+        machine["status"] = d["status"]
+        machine["work_status"] = d["info"]["work_status"]
+        machine["info"] = d["info"]
+    except:
+        pass
+    return json.dumps({"machine": machine}), 200
+
 
 def restart_handler(request):
     data = request.get_json()

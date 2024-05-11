@@ -16,6 +16,7 @@ from database.files_logging import FilesLogging
 from database.machines import Machines
 from database.slaves import Slaves
 from database.hub import Hub
+from database.monitoring import Monitoring
 
 import exceptions
 
@@ -40,4 +41,5 @@ class Database:
         self.files_logging = FilesLogging(self)
         self.hub = Hub(self)
         self.slaves = Slaves(self)
-        self.machines = Machines(self)    
+        self.machines = Machines(self)
+        self.monitoring = Monitoring(self)

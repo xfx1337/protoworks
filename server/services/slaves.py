@@ -53,8 +53,14 @@ def get_slaves_list(request):
     ret = db.slaves.get_slaves_list(type_s)
 
     for i in range(len(ret)):
-        ret[i]["ping"] = -2
-        #ret[i]["ping"] = utils.get_ping(ret[i]["ip"])
+        try: 
+            d = db.monitoring.get_device("SLAVE" + str(ret[i]["id"]))
+            ret[i]["status"] = d["status"]
+            ret[i]["ping"] = d["info"]["ping"]
+        except:
+            ret[i]["status"] = "N/A"
+            ret[i]["ping"] = "N/A"
+        
 
     return json.dumps({"slaves": ret}), 200
 
@@ -66,6 +72,13 @@ def get_slave(request):
     
     idx = data["id"]
     slave = db.slaves.get_slave(idx)
+    try: 
+        d = db.monitoring.get_device("SLAVE" + str(slave["id"]))
+        slave["status"] = d["status"]
+        slave["ping"] = d["info"]["ping"]
+    except:
+        slave["status"] = "N/A"
+        slave["ping"] = "N/A"
     return json.dumps({"slave": slave}), 200
 
 def edit(request):

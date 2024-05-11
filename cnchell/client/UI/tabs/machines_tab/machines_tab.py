@@ -109,7 +109,7 @@ class MachinesWidget(QWidget, Tab):
         self.hub_frame_layout = QVBoxLayout()
 
         self.hub_status_layout = QHBoxLayout()
-        self.hub_status_label = QLabel("Hub. Состояние: Ожидание данных")
+        self.hub_status_label = QLabel("Hub. Состояние: Ожидание данных.")
         self.hub_status_restart = QInitButton("Перезапустить", callback=self.restart_hub)
         self.hub_frame_layout.addWidget(self.hub_status_label)
         self.hub_frame_layout.addWidget(self.hub_status_restart)
@@ -155,7 +155,7 @@ class MachinesWidget(QWidget, Tab):
 
         self.machines_status_layout = QHBoxLayout()
         self.machines_status_label = QLabel("Станки. Состояние: Ожидание данных")
-        self.machines_status_restart = QInitButton("Перезапустить", callback=self.restart_machines)
+        self.machines_status_restart = QInitButton("Перезапустить все соединения", callback=self.restart_machines)
         self.machines_frame_layout.addWidget(self.machines_status_label)
         self.machines_frame_layout.addWidget(self.machines_status_restart)
 
@@ -186,7 +186,7 @@ class MachinesWidget(QWidget, Tab):
             self.hub_status_label.setText("Hub. Состояние: Не настроен")
             return
         else:
-            if int(data["ping"]) > -1:
+            if int(data["ping"]) > -1 and data["status"] == "online":
                 self.hub_status_label.setText("Hub. Состояние: Онлайн")
                 self.hub_status_label.setStyleSheet(UI.stylesheets.GREEN_HIGHLIGHT)
             else:
@@ -201,23 +201,19 @@ class MachinesWidget(QWidget, Tab):
 
     def get_slaves_count(self):
         data = env.net_manager.slaves.get_slaves_list()
-        self.get_data_signals.change_slaves_count.emit({"online": 0, "all": len(data["slaves"])})
         on = 0
-        for s in data["slaves"]:
-           ping = env.net_manager.hardware.ping(s["ip"])
-           if ping >= 0:
-               self.get_data_signals.change_slaves_count.emit({"online": on+1, "all": len(data["slaves"])})
-               on += 1
+        for d in data["slaves"]:
+            if d['status'] == "online":
+                on+=1
+        self.get_data_signals.change_slaves_count.emit({"online": on, "all": len(data["slaves"])})
 
     def get_machines_count(self):
-        data = env.net_manager.machines.get_machines_list()
-        self.get_data_signals.change_machines_count.emit({"online": 0, "all": len(data["machines"])})
+        data = env.net_manager.machines.get_machines_list(-1)
         on = 0
-        for s in data["machines"]:
-           status = env.net_manager.machines.check_online(s["id"])["status"]
-           if status == "Printing" or status == "Operational":
-               self.get_data_signals.change_machines_count.emit({"online": on+1, "all": len(data["machines"])})
-               on += 1
+        for m in data["machines"]:
+           if m["status"] == "online":
+               on+=1
+        self.get_data_signals.change_machines_count.emit({"online": on, "all": len(data["machines"])})
 
     def change_slaves_count_ui(self, dc):
         on = dc["online"]
@@ -264,7 +260,11 @@ class MachinesWidget(QWidget, Tab):
             utils.message("Запросы отправлены.", tittle="Оповещение")
     
     def restart_machines(self):
-        pass
+        self.dlg = QYesOrNoDialog("Вы действительно хотите перезапустить все соединения со станками?")
+        self.dlg.exec()
+        if self.dlg.answer:
+            env.net_manager.hardware.restart_all()
+            utils.message("Запрос отправлен.", tittle="Оповещение")
     
     def add_machine(self):
         slaves = env.net_manager.slaves.get_slaves_list()["slaves"]

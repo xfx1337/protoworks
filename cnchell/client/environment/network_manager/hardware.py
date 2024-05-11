@@ -85,3 +85,8 @@ class Hardware:
         r = self.net_manager.request("/api/hardware/restart_hub")
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)
+    
+    def restart_all(self):
+        r = self.net_manager.request("/api/hardware/restart_all")
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)

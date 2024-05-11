@@ -51,6 +51,13 @@ class Machines:
 
         return r.json()
     
+    def get_machine(self, idx):
+        r = self.net_manager.request("/api/machines/get_machine", {"id": idx})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)
+
+        return r.json()["machine"]
+    
     def restart_handler(self, slave_id, machine_id):
         r = self.net_manager.request("/api/machines/restart_handler", {"slave_id": slave_id, "machine_id": machine_id})
         if r.status_code != 200:

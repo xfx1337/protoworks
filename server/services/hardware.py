@@ -153,6 +153,10 @@ def get_hub_info(request):
     db.hub.set_hub_info(hostname, ip)
 
     d["ping"] = utils.get_ping(ip)
+    try:
+        d["status"] = db.monitoring.get_device("MAIN_HUB")["status"]
+    except:
+        d["status"] = "N/A"
 
     try:
         r = requests.get(ip, timeout=3)
@@ -222,3 +226,30 @@ def send_get_request(request):
         text = "NO DATA"
 
     return text, 200
+
+def send_hub_command(link, data={}, method='POST'):
+    hub = db.hub.get_hub_info()
+    if hub == None:
+        pass
+    else:
+        try:
+            if method == "POST":
+                requests.post(hub["ip"] + link, json = data)
+            else:
+                requests.get(hub["ip"] + link)
+        except: pass
+
+def hub_setup_all_machines():
+    machines = db.machines.get_machines_list(-1)
+    slaves = {}
+    for m in machines:
+        if m["slave_id"] not in slaves:
+            slaves[m["slave_id"]] = []
+        m["unique_info"] = json.loads(m["unique_info"].replace("'", '"'))
+        slaves[m["slave_id"]].append(m)
+    
+    send = []
+    for s in slaves.keys():
+        send.append({"ip": db.slaves.get_slave(s)["ip"], "machines": slaves[s]})
+    
+    send_hub_command("/api/machines/setup_all", {"data": send})
