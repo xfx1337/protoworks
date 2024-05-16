@@ -43,6 +43,7 @@ def server_ip_update():
 def server_request():
     data = request.get_json()
     watchdog.set_monitoring_configuration(data["conf"])
+    print(data["conf"])
     return "setting", 200
 
 @app.route("/api/machines/setup_all", methods=['POST'])

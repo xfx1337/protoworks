@@ -24,7 +24,7 @@ env = Environment()
 
 from environment.task_manager.Progress import Progress
 
-from UI.tabs.machines_tab.MachineListEntry import MachineListEntry
+from UI.tabs.machines_tab.MachineListEntries.MachineFDMListEntry import MachineFDMListEntry
 
 from PySide6.QtCore import Signal, QObject
 
@@ -65,13 +65,17 @@ class MachinesListWindow(QWidget):
         env.task_manager.run_silent_task(self.update_data)
 
     def update_data(self):
-        try: 
+        try:
             data = env.net_manager.machines.get_machines_list()
+            slaves = env.net_manager.slaves.get_slaves_list()
+            slaves_dc = {}
+            for s in slaves["slaves"]:
+                slaves_dc[s["id"]] = s
+            data["slaves"] = slaves_dc
+            self.signals.draw_data.emit(data)
         except Exception as e: 
-            utils.message(str(e))
+            env.main_signals.message(str(e))
             return
-
-        self.signals.draw_data.emit(data)
 
     def got_pings(self):
         for s in self.slave_entries:
@@ -86,11 +90,15 @@ class MachinesListWindow(QWidget):
         self.machine_entries = []
         machines = data["machines"]
         machines = sorted(machines, key=lambda key: (key["slave_id"]))
+        slaves = data["slaves"]
 
         for i in range(len(machines)):
             machine = machines[i]
+            slave = slaves[machine["slave_id"]]
 
-            s = MachineListEntry(machine)
+            if slave["type"] in [FDM_DIRECT, FDM_OCTO, FDM_KLIPPER]:
+                s = MachineFDMListEntry(machine, slave)
+
             self.scrollWidgetLayout.insertWidget(i, s)
             self.scrollWidgetLayout.setAlignment(s, Qt.AlignmentFlag.AlignTop)
 

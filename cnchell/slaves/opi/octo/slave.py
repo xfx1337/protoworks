@@ -26,6 +26,13 @@ app = Flask(__name__)
 CORS(app)
 #socketio = SocketIO(app, async_mode='threading') # should be somthing like gunicorn, gevent or else...
 
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    host = s.getsockname()[0]
+    s.close()
+    return host
+
 
 def replace_all(file_path, pattern, subst):
     #Create temp file
@@ -75,9 +82,9 @@ def get_unique_machine_data(port):
     for i in range(len(found)):
         groups[i]["idVendor"] = clear_string(found[i])
 
-    found = re.findall("ATTRS\{devpath\}==(.*?)ATTRS", out)
-    for i in range(len(found)):
-        groups[i]["devpath"] = clear_string(found[i])
+    # found = re.findall("ATTRS\{devpath\}==(.*?)ATTRS", out)
+    # for i in range(len(found)):
+    #     groups[i]["devpath"] = clear_string(found[i])
 
     return groups
 
@@ -235,6 +242,9 @@ def send():
     if not get_running_port(idx):
         return "not running", 300
 
+    if type(command) == list:
+        for c in command:
+            tx = octo_command(idx, "/api/printer/command", {"command": c}, ret_text=True)
     tx = octo_command(idx, "/api/printer/command", {"command": command}, ret_text=True)
 
     return "done", 200
@@ -366,6 +376,22 @@ def setup_all():
     t.start()
 
     return "sent", 200
+
+@app.route('/api/machines/get_host', methods=['POST'])
+def get_host():
+    data = request.get_json()
+    idx = data["machine_id"]
+    if not os.path.isdir("octo_instances"):
+        return "no instances running", 300
+    
+    idx = data["id"]
+    if not get_running_port(idx):
+        return "not running", 300
+
+    host = get_local_ip()
+    host = "http://" + host + ":" + str(5001+int(idx)) + "/"
+    return json.dumps({"host": host}), 200
+
 
 app.run(threaded=True, debug=False, host="0.0.0.0", port=3719)
 CORS(app)

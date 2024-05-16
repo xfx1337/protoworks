@@ -9,6 +9,7 @@ from environment.templates_manager.templates_manager import TemplatesManager
 from environment.file_manager.file_manager import FileManager
 from environment.database.db import Database
 from environment.part_manager.part_manager import PartManager
+from environment.machine_utils.machine_utils import MachineUtils
 
 import utils
 
@@ -30,6 +31,7 @@ class Environment():
         self.db = Database()
 
         self.part_manager = PartManager(self)
+        self.machine_utils = MachineUtils(self)
 
         self.main_signals = None
         self.main_window = None

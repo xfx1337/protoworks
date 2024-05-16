@@ -3,10 +3,11 @@ from singleton import singleton
 @singleton
 class WorkOrderParts:
     def __init__(self, db):
-        self.cursor = db.cursor
-        self.connection = db.connection 
+        self.db = db
+        
+        connection, cursor = self.db.get_conn_cursor()
 
-        self.cursor.execute(f"""
+        cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS work_order_parts (
             id serial PRIMARY KEY,
             machine_id VARCHAR(255),
@@ -15,3 +16,5 @@ class WorkOrderParts:
             status VARCHAR(255)
         )
         """)
+
+        self.db.close(connection)

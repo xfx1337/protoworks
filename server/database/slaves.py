@@ -3,11 +3,11 @@ from singleton import singleton
 @singleton
 class Slaves:
     def __init__(self, db):
-        self.cursor = db.cursor
-        self.connection = db.connection 
         self.db = db
 
-        self.cursor.execute(f"""
+        connection, cursor = self.db.get_conn_cursor()
+
+        cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS slaves (
             id serial PRIMARY KEY,
             hostname VARCHAR(255),
@@ -15,30 +15,39 @@ class Slaves:
             type INT
         )
         """)
+        self.db.close(connection)
     
     def add(self, hostname, ip, s_type):
-        self.cursor.execute(f"INSERT INTO slaves (hostname, ip, type) VALUES ('{hostname}', '{ip}', {s_type})")
-        self.connection.commit()
+        connection, cursor = self.db.get_conn_cursor()
+        cursor.execute(f"INSERT INTO slaves (hostname, ip, type) VALUES ('{hostname}', '{ip}', {s_type})")
+        connection.commit()
+        self.db.close(connection)
     
     def get_slaves_list(self, type_s):
+        connection, cursor = self.db.get_conn_cursor()
         if type_s == -1:
-            self.cursor.execute("SELECT * FROM slaves")
+            cursor.execute("SELECT * FROM slaves")
         else:
-            self.cursor.execute(f"SELECT * FROM slaves WHERE type={int(type_s)}")
-        content = self.cursor.fetchall()
+            cursor.execute(f"SELECT * FROM slaves WHERE type={int(type_s)}")
+        content = cursor.fetchall()
 
         slaves = []
         for s in content:
             slave = {"id": s[0], "hostname": s[1], "ip": s[2], "type": s[3]}
             slaves.append(slave)
+        self.db.close(connection)
         return slaves
     
     def edit(self, idx, ip, hostname):
-        self.cursor.execute(f"UPDATE slaves SET ip='{ip}', hostname='{hostname}' WHERE id={str(idx)}")
-        self.connection.commit()
+        connection, cursor = self.db.get_conn_cursor()
+        cursor.execute(f"UPDATE slaves SET ip='{ip}', hostname='{hostname}' WHERE id={str(idx)}")
+        connection.commit()
+        self.db.close(connection)
     
     def get_slave(self, idx):
-        self.cursor.execute(f"SELECT * FROM slaves WHERE id={idx}")
-        s = self.cursor.fetchone()
+        connection, cursor = self.db.get_conn_cursor()
+        cursor.execute(f"SELECT * FROM slaves WHERE id={idx}")
+        s = cursor.fetchone()
         slave = {"id": s[0], "hostname": s[1], "ip": s[2], "type": s[3]}
+        self.db.close(connection)
         return slave

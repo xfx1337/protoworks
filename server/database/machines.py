@@ -3,11 +3,10 @@ from singleton import singleton
 @singleton
 class Machines:
     def __init__(self, db):
-        self.cursor = db.cursor
-        self.connection = db.connection 
         self.db = db
+        connection, cursor = self.db.get_conn_cursor()
 
-        self.cursor.execute(f"""
+        cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS machines (
             id serial PRIMARY KEY,
             name VARCHAR(255),
@@ -22,46 +21,55 @@ class Machines:
             baudrate INT
         )
         """)
+        self.db.close(connection)
     
     def add_machine(self, name, slave_id, unique_info, plate, delta, gcode_manager, baudrate):
+        connection, cursor = self.db.get_conn_cursor()
         x = plate["x"]
         y = plate["y"]
         z = plate["z"]
         delta_radius = delta["radius"]
         delta_height = delta["height"]
         unique_info = str(unique_info)
-        self.cursor.execute("INSERT into machines (name, x, y, z, unique_info, slave_id, delta_radius, delta_height, gcode_manager, baudrate) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", 
+        cursor.execute("INSERT into machines (name, x, y, z, unique_info, slave_id, delta_radius, delta_height, gcode_manager, baudrate) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", 
         (name, x, y, z, unique_info, slave_id, delta_radius, delta_height, gcode_manager, baudrate))
-        self.connection.commit()
-    
+        connection.commit()
+        self.db.close(connection)
+
     def edit_machine(self, idx, name, unique_info, plate, delta, gcode_manager, baudrate):
+        connection, cursor = self.db.get_conn_cursor()
         x = plate["x"]
         y = plate["y"]
         z = plate["z"]
         delta_radius = delta["radius"]
         delta_height = delta["height"]
         unique_info = str(unique_info)
-        self.cursor.execute("UPDATE machines SET name=%s, x=%s, y=%s, z=%s, unique_info=%s, slave_id=%s, delta_radius=%s, delta_height=%s, gcode_manager=%s, baudrate=%s", 
+        cursor.execute("UPDATE machines SET name=%s, x=%s, y=%s, z=%s, unique_info=%s, slave_id=%s, delta_radius=%s, delta_height=%s, gcode_manager=%s, baudrate=%s", 
         (name, x, y, z, unique_info, slave_id, delta_radius, delta_height, gcode_manager, baudrate))
-        self.connection.commit()
+        connection.commit()
+        self.db.close(connection)
 
     def get_machines_list(self, slave_idx):
+        connection, cursor = self.db.get_conn_cursor()
         if slave_idx == -1:
-            self.cursor.execute("SELECT * FROM machines")
+            cursor.execute("SELECT * FROM machines")
         else:
-            self.cursor.execute(f"SELECT * FROM machines WHERE slave_id={int(slave_idx)}")
-        content = self.cursor.fetchall()
+            cursor.execute(f"SELECT * FROM machines WHERE slave_id={int(slave_idx)}")
+        content = cursor.fetchall()
 
         machines = []
         for s in content:
             machine = {"id": s[0], "plate": {"x": s[2], "y": s[3], "z": s[4]}, "name": s[1], "unique_info": s[5], "slave_id": s[6],
             "delta": {"radius": s[7], "height": s[8]}, "gcode_manager": s[9], "baudrate": s[10]}
             machines.append(machine)
+        self.db.close(connection)
         return machines
 
     def get_machine(self, idx):
-        self.cursor.execute(f"SELECT * FROM machines WHERE id={idx}")
-        s = self.cursor.fetchone()
+        connection, cursor = self.db.get_conn_cursor()
+        cursor.execute(f"SELECT * FROM machines WHERE id={idx}")
+        s = cursor.fetchone()
         machine = {"id": s[0], "plate": {"x": s[2], "y": s[3], "z": s[4]}, "name": s[1], "unique_info": s[5], "slave_id": s[6],
             "delta": {"radius": s[7], "height": s[8]}, "gcode_manager": s[9], "baudrate": s[10]}
+        self.db.close(connection)
         return machine

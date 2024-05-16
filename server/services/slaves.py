@@ -24,6 +24,9 @@ config = Config("config.ini")
 
 from common import *
 
+import services.monitoring
+import services.hardware
+
 def add_slave(request):
     data = request.get_json()
     ret = db.users.valid_token(data["token"])
@@ -37,6 +40,10 @@ def add_slave(request):
     #d["ping"] = utils.get_ping(ip)
 
     db.slaves.add(hostname, ip, s_type)
+
+    conf = services.monitoring.get_monitoring_configuration()
+    services.hardware.send_hub_command("/api/set_monitoring_configuration", {"conf": conf})
+
     return "Успешно", 200
 
 def get_slaves_list(request):
@@ -92,6 +99,10 @@ def edit(request):
     idx = data["id"]
 
     db.slaves.edit(idx, ip, hostname)
+
+    conf = services.monitoring.get_monitoring_configuration()
+    services.hardware.send_hub_command("/api/set_monitoring_configuration", {"conf": conf})
+
     return "Успешно", 200
 
 def restart(request):
@@ -129,3 +140,16 @@ def send_request(request):
         return "Method not implemented", 405
     
     return r.text, 200
+
+def _send_request(slave_id, link, method, data={}, ret_text=False):
+    slave = db.slaves.get_slave(slave_id)
+
+    if method == 'POST':
+        r = requests.post(slave["ip"] + link, json=data)
+    elif method == 'GET':
+        r = requests.get(slave['ip'] + link)
+    else:
+        return "Method not implemented", 405
+    if ret_text:
+        return r.text
+    return r.json()

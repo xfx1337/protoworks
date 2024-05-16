@@ -1,6 +1,7 @@
 from singleton import singleton
 
 import psycopg2
+from psycopg2 import pool
 
 from database.users import Users
 from database.projects import Projects
@@ -23,10 +24,20 @@ import exceptions
 @singleton
 class Database:
     def __init__(self):
-        try: self.connection = psycopg2.connect(dbname='protoworks', user='postgres', password='Flvbybcnhfnjh', host='localhost')
-        except: raise exceptions.DatabaseInitFailed("failed to init db")
-        self.connection.autocommit = True
-        self.cursor = self.connection.cursor()
+        #try: connection = psycopg2.connect(dbname='protoworks', user='postgres', password='Flvbybcnhfnjh', host='localhost')
+        #except: raise exceptions.DatabaseInitFailed("failed to init db")
+        
+        try:
+            self.connection_pool = psycopg2.pool.ThreadedConnectionPool(5, 20, dbname='protoworks', 
+            user='postgres', password='Flvbybcnhfnjh', host='localhost')
+        except:
+            raise exceptions.DatabaseInitFailed("failed to init db")
+        if not self.connection_pool:
+            raise exceptions.DatabaseInitFailed("failed to init db")
+
+        connection = self.connection_pool.getconn()
+        connection.autocommit = True
+        self.connection_pool.putconn(connection)
 
         self.users = Users(self)
         self.projects = Projects(self)
@@ -43,3 +54,11 @@ class Database:
         self.slaves = Slaves(self)
         self.machines = Machines(self)
         self.monitoring = Monitoring(self)
+
+    def get_conn_cursor(self):
+        connection = self.connection_pool.getconn()
+        cursor = connection.cursor()
+        return connection, cursor
+    def close(self, conn):
+        conn.cursor().close()
+        self.connection_pool.putconn(conn)

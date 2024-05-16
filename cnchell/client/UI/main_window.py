@@ -99,6 +99,7 @@ class MainWindow(QMainWindow):
         self.botom_bar = QSystemBar()
 
         env.main_signals.task_status_changed.connect(self.on_operation_change)
+        env.main_signals.message.connect(utils.message)
 
         main_vertical_layout.addWidget(self.botom_bar, 1)
         main_vertical_layout.setAlignment(self.botom_bar, Qt.AlignmentFlag.AlignBottom)

@@ -311,6 +311,10 @@ def restart_all():
     services.hardware.hub_setup_all_machines()
     return "sent", 200
 
+@app.route('/api/machines/get_host', methods=['POST'])
+def get_host():
+    return services.machines.get_host(request)
+
 @socketio.on("send_monitoring_update")
 def check_online(message):
     services.monitoring.update_monitoring(json.loads(message))

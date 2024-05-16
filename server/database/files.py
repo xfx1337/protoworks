@@ -3,11 +3,10 @@ from singleton import singleton
 @singleton
 class Files:
     def __init__(self, db):
-        self.cursor = db.cursor
-        self.connection = db.connection 
         self.db = db
+        connection, cursor = self.db.get_conn_cursor()
         
-        self.cursor.execute(f"""
+        cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS files (
             id serial,
             path VARCHAR(255) PRIMARY KEY UNIQUE,
@@ -16,8 +15,10 @@ class Files:
             project_id INT
         )
         """)
+        self.db.close(connection)
     
     def register_update(self, data):
+        connection, cursor = self.db.get_conn_cursor()
         if len(data) < 1:
             return
         write_sql = "INSERT INTO files (path, date_modified, file_size, project_id) VALUES "
@@ -32,24 +33,31 @@ class Files:
             write_sql += row
         write_sql = write_sql[:-1]
         write_sql += "\nON CONFLICT (path) DO UPDATE SET date_modified=excluded.date_modified, file_size=excluded.file_size, project_id=excluded.project_id"
-        self.cursor.execute(write_sql)
-        self.connection.commit()
+        cursor.execute(write_sql)
+        connection.commit()
+        self.db.close(connection)
 
         self.db.files_logging.register_update(data)
 
     def delete_file(self, file_path):
+        connection, cursor = self.db.get_conn_cursor()
         delete_sql = f"DELETE FROM files WHERE path = '{file_path}'"
-        self.cursor.execute(delete_sql)
-        self.connection.commit()
+        cursor.execute(delete_sql)
+        connection.commit()
+        self.db.close(connection)
 
     def remove_logs(self, project_id):
+        connection, cursor = self.db.get_conn_cursor()
         delete_sql = f"DELETE FROM files WHERE project_id={project_id}"
-        self.cursor.execute(delete_sql)
-        self.connection.commit()
+        cursor.execute(delete_sql)
+        connection.commit()
+        self.db.close(connection)
         self.db.files_logging.remove_logs(project_id)
+        
 
 
     def get_modification_time_for_list(self, files):
+        connection, cursor = self.db.get_conn_cursor()
         files_str = ""
         for f in files:
             files_str += ("'" + f + "', ")
@@ -57,8 +65,8 @@ class Files:
         if len(files_str) < 1:
             return {}
         read_sql = f"SELECT path, date_modified FROM files WHERE path in ({files_str})"
-        self.cursor.execute(read_sql)
-        content = self.cursor.fetchall()
+        cursor.execute(read_sql)
+        content = cursor.fetchall()
 
         if content == None:
             return []
@@ -66,4 +74,5 @@ class Files:
         dc = {}
         for row in content:
             dc[row[0]] = int(row[1])
+        self.db.close(connection)
         return dc

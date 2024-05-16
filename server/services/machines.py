@@ -25,6 +25,10 @@ config = Config("config.ini")
 
 from common import *
 
+import services.slaves
+import services.monitoring
+import services.hardware
+
 def add_machine(request):
     data = request.get_json()
     ret = db.users.valid_token(data["token"])
@@ -40,6 +44,10 @@ def add_machine(request):
     gcode_manager = data["gcode_manager"]
 
     db.machines.add_machine(name, slave_id, unique_info, plate, delta, gcode_manager, baudrate)
+
+    conf = services.monitoring.get_monitoring_configuration()
+    services.hardware.send_hub_command("/api/set_monitoring_configuration", {"conf": conf})
+
     return "Добавлено", 200
 
 def edit_machine(request):
@@ -57,6 +65,10 @@ def edit_machine(request):
     gcode_manager = data["gcode_manager"]
 
     db.machines.edit_machine(idx, name, unique_info, plate, delta, gcode_manager, baudrate)
+
+    conf = services.monitoring.get_monitoring_configuration()
+    services.hardware.send_hub_command("/api/set_monitoring_configuration", {"conf": conf})
+
     return "Изменено", 200
 
 def list_machines(request):
@@ -75,12 +87,14 @@ def list_machines(request):
     for m in ret:
         m["status"] = "N/A"
         m["work_status"] = "N/A"
+        m["last_seen"] = 0
         m["info"] = {}
         try:
             d = db.monitoring.get_device("MACHINE" + str(m["id"]))
             m["status"] = d["status"]
             m["work_status"] = d["info"]["work_status"]
             m["info"] = d["info"]
+            m["last_seen"] = d["date"]
         except:
             pass
 
@@ -97,15 +111,29 @@ def get_machine(request):
     machine["status"] = "N/A"
     machine["work_status"] = "N/A"
     machine["info"] = {}
+    machine["last_seen"] = 0
     try:
         d = db.monitoring.get_device("MACHINE" + str(machine["id"]))
         machine["status"] = d["status"]
         machine["work_status"] = d["info"]["work_status"]
         machine["info"] = d["info"]
+        machine["last_seen"] = d["date"]
     except:
         pass
     return json.dumps({"machine": machine}), 200
 
+def get_host(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+
+    idx = data["id"]
+    machine = db.machines.get_machine(idx)
+    slave = db.slaves.get_slave(machine["slave_id"])
+    
+    ret = services.slaves._send_request(slave["id"], "/api/machines/get_host", "POST", {"id": idx})
+    return ret, 200
 
 def restart_handler(request):
     data = request.get_json()
@@ -113,11 +141,11 @@ def restart_handler(request):
     if not ret:
         return "Токен не валиден", 403
     
-    slave_id = data["slave_id"]
     idx = data["machine_id"]
 
-    slave = db.slaves.get_slave(int(slave_id))
     machine = db.machines.get_machine(int(idx))
+    slave = db.slaves.get_slave(machine["slave_id"])
+    
     r = requests.post(slave["ip"] + "/api/machines/restart_handler", json = {"unique_info":json.loads(machine["unique_info"].replace("'", '"')), "id": machine["id"]})
     return r.text, 200
 
@@ -127,11 +155,10 @@ def reconnect(request):
     if not ret:
         return "Токен не валиден", 403
     
-    slave_id = data["slave_id"]
     idx = data["machine_id"]
 
-    slave = db.slaves.get_slave(int(slave_id))
     machine = db.machines.get_machine(int(idx))
+    slave = db.slaves.get_slave(machine["slave_id"])
     r = requests.post(slave["ip"] + "/api/machines/reconnect", json = {"unique_info":json.loads(machine["unique_info"].replace("'", '"')), 
     "id": machine["id"], "baudrate": machine["baudrate"]})
     return r.text, 200
@@ -142,13 +169,12 @@ def send_request(request):
     if not ret:
         return "Токен не валиден", 403
     
-    slave_id = data["slave_id"]
     idx = data["machine_id"]
     link = data["link"]
     method = data["method"]
 
-    slave = db.slaves.get_slave(int(slave_id))
     machine = db.machines.get_machine(int(idx))
+    slave = db.slaves.get_slave(machine["slave_id"])
     
     data_sent = {}
     if "data" in data:
@@ -170,12 +196,11 @@ def send_gcode(request):
     if not ret:
         return "Токен не валиден", 403
     
-    slave_id = data["slave_id"]
     idx = data["machine_id"]
     gcode = data["gcode"]
 
-    slave = db.slaves.get_slave(int(slave_id))
     machine = db.machines.get_machine(int(idx))
+    slave = db.slaves.get_slave(machine["slave_id"])
     r = requests.post(slave["ip"] + "/api/machines/send_gcode", json = {"unique_info":json.loads(machine["unique_info"].replace("'", '"')), "id": machine["id"], "command": gcode})
 
     return "Успешно", 200
@@ -203,11 +228,10 @@ def cancel_job(request):
     if not ret:
         return "Токен не валиден", 403
     
-    slave_id = data["slave_id"]
     idx = data["machine_id"]
 
-    slave = db.slaves.get_slave(int(slave_id))
     machine = db.machines.get_machine(int(idx))
+    slave = db.slaves.get_slave(machine["slave_id"])
     r = requests.post(slave["ip"] + "/api/machines/cancel_job", json = {"unique_info":json.loads(machine["unique_info"].replace("'", '"')), "id": machine["id"]})
 
     return r.text, 200
@@ -227,11 +251,11 @@ def upload_gcode(request):
     f = request.files['file']
     f.save(path)
 
-    slave_id = obj["slave_id"]
     idx = obj["machine_id"]
 
-    slave = db.slaves.get_slave(int(slave_id))
     machine = db.machines.get_machine(int(idx))
+    slave = db.slaves.get_slave(machine["slave_id"])
+    
 
     encoder = MultipartEncoder(fields={'file': (filename, open(path, "rb"), 'application/octet-stream'), 
         "json": ('payload.json', json.dumps({"filename": filename, "unique_info":json.loads(machine["unique_info"].replace("'", '"')), "id": machine["id"]}), "application/json")}
@@ -252,13 +276,13 @@ def start_job(request):
     ret = db.users.valid_token(data["token"])
     if not ret:
         return "Токен не валиден", 403
-    
-    slave_id = data["slave_id"]
+
     idx = data["machine_id"]
     file = data["file"]
 
-    slave = db.slaves.get_slave(int(slave_id))
     machine = db.machines.get_machine(int(idx))
+    slave = db.slaves.get_slave(machine["slave_id"])
+    
     r = requests.post(slave["ip"] + "/api/machines/start_job", json = {"unique_info":json.loads(machine["unique_info"].replace("'", '"')), "id": machine["id"], "file": file})
 
     return r.text, 200

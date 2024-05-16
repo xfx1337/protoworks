@@ -24,6 +24,9 @@ from UI.widgets.QFilesListSureDialog import QFilesListSureDialog
 from UI.widgets.QAskForNumberDialog import QAskForNumberDialog
 from UI.widgets.QYesOrNoDialog import QYesOrNoDialog
 from UI.widgets.QAskForFilesDialog import QAskForFilesDialog
+from UI.widgets.QAskForLineDialog import QAskForLineDialog
+
+from UI.tabs.machines_tab.widgets.MachineInteractiveMover import MachineInteractiveMover
 
 import defines
 from defines import *
@@ -36,11 +39,11 @@ class PingSignals(QObject):
     define_finished = Signal(str)
     status_changed = Signal(str)
 
-class MachineListEntry(QFrame):
-    def __init__(self, machine):
+class MachineFDMListEntry(QFrame):
+    def __init__(self, machine, slave):
         super().__init__()
         self.machine = machine
-        self.slave = env.net_manager.slaves.get_slave(self.machine["slave_id"])["slave"]
+        self.slave = slave
 
         self.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
         self.setLineWidth(1)
@@ -50,7 +53,12 @@ class MachineListEntry(QFrame):
         self.ping_signals.define_finished.connect(self.notify_define)
         self.ping_signals.status_changed.connect(self.status_changed_ui)
 
-        self.layout = QVBoxLayout()
+        self.layout = QHBoxLayout()
+        self.left_layout = QVBoxLayout()
+        self.right_layout = QVBoxLayout()
+
+        self.layout.addLayout(self.left_layout)
+        self.layout.addLayout(self.right_layout)
 
         idx = machine["id"]
         slave_id = machine["slave_id"]
@@ -60,11 +68,13 @@ class MachineListEntry(QFrame):
         unique_info = machine["unique_info"]
         status = machine["status"]
         working_state = machine["work_status"]
+        type_s = SLAVES_TYPES_TRANSLATIONS[self.slave["type"]]
 
 
         self.machine_name_label = QLabel(name)
         self.machine_idx_label = QLabel(f"ID: {str(idx)}")
         self.machine_slave_idx_label = QLabel(f"ID слейва: {str(slave_id)}")
+        self.machine_type_label = QLabel(f"Тип: {type_s}")
         #self.machine_plate_label = QLabel(f"Стол: {str(plate)}")
 
         if plate["x"] == -1:
@@ -73,35 +83,55 @@ class MachineListEntry(QFrame):
             self.machine_plate_label = QLabel(f"Стол XYZ: {str(plate)}")
 
         self.machine_status_label = QLabel(f"Состояние: {status}")
+        if status == "offline":
+            self.machine_status_label.setStyleSheet(stylesheets.RED_HIGHLIGHT)
         self.machine_work_status_label = QLabel(f"Состояние работы: {working_state}")
         #self.machine_unique_info_label = QLabel(f"Информация: {str(unique_info)}")
 
 
-        self.layout.addWidget(self.machine_name_label)
-        self.layout.addWidget(self.machine_idx_label)
-        self.layout.addWidget(self.machine_slave_idx_label)
-        self.layout.addWidget(self.machine_plate_label)
-        self.layout.addWidget(self.machine_status_label)
-        self.layout.addWidget(self.machine_work_status_label)
+        self.left_layout.addWidget(self.machine_name_label)
+        self.left_layout.addWidget(self.machine_idx_label)
+        self.left_layout.addWidget(self.machine_slave_idx_label)
+        self.left_layout.addWidget(self.machine_type_label)
+        self.left_layout.addWidget(self.machine_plate_label)
+        self.left_layout.addWidget(self.machine_status_label)
+        self.left_layout.addWidget(self.machine_work_status_label)
 
-        if self.slave["type"] in [FDM_OCTO, FDM_KLIPPER, FDM_DIRECT]:
-            if "info" in self.machine:
-                if "envinronment" in self.machine["info"]:
-                    try:
-                        tempertures = self.machine["info"]["envinronment"]["temperature"]
-                        actual = tempertures["bed"]["actual"]
-                        target = tempertures["bed"]["target"]
-                        actual_t = tempertures["tool0"]["actual"]
-                        target_t = tempertures["tool0"]["target"]
+        self.alert_label = QLabel("ok")
+        self.left_layout.addWidget(self.alert_label)
+        self.alert_label.setStyleSheet(stylesheets.YELLOW_HIGHLIGHT)
+        self.alert_label.hide()
 
-                        self.bed_temp_label = QLabel(f"Температура стола {actual}/{target}")
-                        self.extruder_temp_label = QLabel(f"Температура сопла {actual_t}/{target_t}")
-                        self.layout.addWidget(self.bed_temp_label)
-                        self.layout.addWidget(self.extruder_temp_label)
-                    except:
-                        pass
+        st = False
+        if "info" in self.machine:
+            if "envinronment" in self.machine["info"] and self.machine["info"]["envinronment"] != "offline":
+                try:
+                    tempertures = self.machine["info"]["envinronment"]["temperature"]
+                    actual = tempertures["bed"]["actual"]
+                    target = tempertures["bed"]["target"]
+                    actual_t = tempertures["tool0"]["actual"]
+                    target_t = tempertures["tool0"]["target"]
 
-        #self.layout.addWidget(self.machine_unique_info_label)
+                    self.bed_temp_label = QLabel(f"Температура стола {actual}/{target}")
+                    self.extruder_temp_label = QLabel(f"Температура сопла {actual_t}/{target_t}")
+                    self.left_layout.addWidget(self.bed_temp_label)
+                    self.left_layout.addWidget(self.extruder_temp_label)
+                    st = True
+                except:
+                    pass
+        if not st:
+            self.alert_label.setText("Не удалось получить/отобразить данные")
+            self.alert_label.show()
+        elif time.time() - self.machine["last_seen"] > 10:
+            self.alert_label.setText("Станок не отвечает")
+            self.alert_label.show()
+        else:
+            self.alert_label.hide()
+
+        #self.left_layout.addWidget(self.machine_unique_info_label)
+
+        self.mover = MachineInteractiveMover(self.move, self.check_move_available)
+        self.right_layout.addWidget(self.mover)
 
 
         self.menu = QMenu(self)
@@ -111,15 +141,16 @@ class MachineListEntry(QFrame):
         action_restart_handler = self.menu.addAction("Перезапустить обработчик станка на слейве")
         action_restart_connection = self.menu.addAction("Перезапустить соединение станка с обработчиком")
         action_send_command = self.menu.addAction("Отправить команду")
+        action_open_terminal = self.menu.addAction("Открыть терминал(LAN)")
         action_pause = self.menu.addAction("Пауза")
         action_stop = self.menu.addAction("Отменить работу")
-        action_restart = self.menu.addAction("Перезапустить")
         action_edit = self.menu.addAction("Редактировать")
         action_delete = self.menu.addAction("Удалить")
 
         action_force_start.triggered.connect(self.force_start)
         action_restart_handler.triggered.connect(self.restart_handler)
         action_restart_connection.triggered.connect(self.restart_connection)
+        action_open_terminal.triggered.connect(self.open_terminal)
         action_send_command.triggered.connect(self.send_command)
         action_stop.triggered.connect(self.stop_job)
 
@@ -134,11 +165,20 @@ class MachineListEntry(QFrame):
 
         self.update_data()
 
+    def move(self, dirx, dist):
+        command = env.machine_utils.get_move_commands(dirx, dist, self.machine["gcode_manager"])
+        env.net_manager.machines.send_gcode_command(self.machine["id"], command)
+
+    def check_move_available(self):
+        if self.machine["status"] == "offline":
+            return False
+        return True
+
     def stop_job(self):
         self.dlg = QYesOrNoDialog("Вы уверены, что хотите отменить текущую работу станка?")
         self.dlg.exec()
         if self.dlg.answer:
-            env.net_manager.machines.cancel_job(self.slave["id"], self.machine["id"])
+            env.net_manager.machines.cancel_job(self.machine["id"])
             utils.message("Запрос отправлен", tittle="Оповещение")
 
     # def auto_update(self):
@@ -149,29 +189,42 @@ class MachineListEntry(QFrame):
 
     def status_changed_ui(self):
         self.machine_status_label.setText("Состояние: " + self.machine["status"])
+        if self.machine["status"] == "offline":
+            self.machine_status_label.setStyleSheet(stylesheets.RED_HIGHLIGHT)
+        else:
+            self.machine_status_label.setStyleSheet(stylesheets.NO_HIGHLIGHT)
         working_state = self.machine["work_status"]
         self.machine_work_status_label.setText(f"Состояние работы: {working_state}")
-        if self.slave["type"] in [FDM_OCTO, FDM_KLIPPER, FDM_DIRECT]:
-            if "info" in self.machine:
-                if "envinronment" in self.machine["info"]:
+        st = False
+        if "info" in self.machine:
+            if "envinronment" in self.machine["info"] and self.machine["info"]["envinronment"] != "offline":
+                try:
+                    tempertures = self.machine["info"]["envinronment"]["temperature"]
+                    actual = tempertures["bed"]["actual"]
+                    target = tempertures["bed"]["target"]
+                    actual_t = tempertures["tool0"]["actual"]
+                    target_t = tempertures["tool0"]["target"]
+
                     try:
-                        tempertures = self.machine["info"]["envinronment"]["temperature"]
-                        actual = tempertures["bed"]["actual"]
-                        target = tempertures["bed"]["target"]
-                        actual_t = tempertures["tool0"]["actual"]
-                        target_t = tempertures["tool0"]["target"]
-
-                        try:
-                            self.bed_temp_label.setText(f"Температура стола {actual}/{target}")
-                            self.extruder_temp_label.setText(f"Температура сопла {actual_t}/{target_t}")
-                        except:
-                            self.bed_temp_label = QLabel(f"Температура стола {actual}/{target}")
-                            self.extruder_temp_label = QLabel(f"Температура сопла {actual_t}/{target_t}")
-                            self.layout.addWidget(self.bed_temp_label)
-                            self.layout.addWidget(self.extruder_temp_label)
+                        self.bed_temp_label.setText(f"Температура стола {actual}/{target}")
+                        self.extruder_temp_label.setText(f"Температура сопла {actual_t}/{target_t}")
                     except:
-                        pass
-
+                        self.bed_temp_label = QLabel(f"Температура стола {actual}/{target}")
+                        self.extruder_temp_label = QLabel(f"Температура сопла {actual_t}/{target_t}")
+                        self.left_layout.addWidget(self.bed_temp_label)
+                        self.left_layout.addWidget(self.extruder_temp_label)
+                    st = True
+                except:
+                    pass
+        
+        if not st:
+            self.alert_label.setText("Не удалось получить/отобразить данные")
+            self.alert_label.show()
+        elif time.time() - self.machine["last_seen"] > 10:
+            self.alert_label.setText("Станок не отвечает")
+            self.alert_label.show()
+        else:
+            self.alert_label.hide()
 
     def check_online_thread(self):
         while True:
@@ -189,27 +242,37 @@ class MachineListEntry(QFrame):
         self.dlg = QYesOrNoDialog("Вы уверены, что хотите отменить текущую работу станка для запуска другого файла?")
         self.dlg.exec()
         if self.dlg.answer:
-            env.net_manager.machines.cancel_job(self.slave["id"], self.machine["id"])
+            env.net_manager.machines.cancel_job(self.machine["id"])
         
         self.files_dlg = QAskForFilesDialog("Выберите GCODE файл", only_one_file=True, callback_yes=self.force_start_file)
         self.files_dlg.exec()
 
     def force_start_file(self, file):
-        env.net_manager.machines.upload_gcode_file(self.machine["slave_id"], self.machine["id"], file)
-        env.net_manager.machines.start_job(self.machine["slave_id"], self.machine["id"], file.split("\\")[-1])
+        env.net_manager.machines.upload_gcode_file(self.machine["id"], file)
+        env.net_manager.machines.start_job(self.machine["id"], file.split("\\")[-1])
         utils.message("Запрос отправлен", tittle="Оповещение")
 
-    
     def send_command(self):
-        env.net_manager.machines.send_gcode_command(self.machine["slave_id"], self.machine["id"], "G28")
-        utils.message("Запрос отправлен", tittle="Оповещение")
+        self.dlg = QAskForLineDialog("Введите строку", "Вопрос")
+        self.dlg.exec()
+        if self.dlg.answer != "":
+            env.net_manager.machines.send_gcode_command(self.machine["id"], self.dlg.answer)
+            utils.message("Команда отправлена", tittle="Оповещение")
+
+    def open_terminal(self):
+        self.dlg = QYesOrNoDialog("Если вы не находитесь в локальной сети слейва откажитесь нажав 'Нет'")
+        self.dlg.exec()
+        if self.dlg.answer:
+            host = env.net_manager.machines.get_host(self.machine["id"])
+            self.term = QWebTerminal(host)
+            self.term.show()
 
     def restart_connection(self):
-        env.net_manager.machines.reconnect(self.machine["slave_id"], self.machine["id"])
+        env.net_manager.machines.reconnect(self.machine["id"])
         utils.message("Запрос отправлен", tittle="Оповещение")
 
     def restart_handler(self):
-        env.net_manager.machines.restart_handler(self.machine["slave_id"], self.machine["id"])
+        env.net_manager.machines.restart_handler(self.machine["id"])
         utils.message("Запрос отправлен", tittle="Оповещение")
 
     def restart(self):

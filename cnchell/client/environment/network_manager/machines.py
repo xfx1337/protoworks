@@ -58,25 +58,25 @@ class Machines:
 
         return r.json()["machine"]
     
-    def restart_handler(self, slave_id, machine_id):
-        r = self.net_manager.request("/api/machines/restart_handler", {"slave_id": slave_id, "machine_id": machine_id})
+    def restart_handler(self, machine_id):
+        r = self.net_manager.request("/api/machines/restart_handler", {"machine_id": machine_id})
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)
     
-    def reconnect(self, slave_id, machine_id):
-        r = self.net_manager.request("/api/machines/reconnect", {"slave_id": slave_id, "machine_id": machine_id})
+    def reconnect(self, machine_id):
+        r = self.net_manager.request("/api/machines/reconnect", {"machine_id": machine_id})
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)
 
-    def send_gcode_command(self, slave_id, machine_id, command):
-        r = self.net_manager.request("/api/machines/send_gcode", {"slave_id": slave_id, "machine_id": machine_id, "gcode": command})
+    def send_gcode_command(self, machine_id, command):
+        r = self.net_manager.request("/api/machines/send_gcode", {"machine_id": machine_id, "gcode": command})
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)
 
-    def upload_gcode_file(self, slave_id, machine_id, file):
+    def upload_gcode_file(self, machine_id, file):
         filename = file.split("\\")[-1]
         encoder = MultipartEncoder(fields={'file': (filename, open(file, "rb"), 'application/octet-stream'), 
-            "json": ('payload.json', json.dumps({"token": self.net_manager.token, "filename": filename, "slave_id": slave_id, "machine_id": machine_id}), "application/json")}
+            "json": ('payload.json', json.dumps({"token": self.net_manager.token, "filename": filename, "machine_id": machine_id}), "application/json")}
         )
         
         r = requests.post(
@@ -86,12 +86,18 @@ class Machines:
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)
 
-    def cancel_job(self, slave_id, machine_id):
-        r = self.net_manager.request("/api/machines/cancel_job", {"slave_id": slave_id, "machine_id": machine_id})
+    def cancel_job(self, machine_id):
+        r = self.net_manager.request("/api/machines/cancel_job", {"machine_id": machine_id})
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)
 
-    def start_job(self, slave_id, machine_id, file):
-        r = self.net_manager.request("/api/machines/start_job", {"slave_id": slave_id, "machine_id": machine_id, "file": file})
+    def start_job(self, machine_id, file):
+        r = self.net_manager.request("/api/machines/start_job", {"machine_id": machine_id, "file": file})
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)
+
+    def get_host(self, machine_id):
+        r = self.net_manager.request("/api/machines/get_host", {"id": machine_id})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)
+        return r.json()["host"]

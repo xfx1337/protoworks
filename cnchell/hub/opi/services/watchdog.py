@@ -31,28 +31,31 @@ class Watchdog:
         if self.conf == None:
             return []
         for m in self.conf["machines"]:
-            e = {}
-            e["info"] = {}
-            ip = m["ip"]
-            e["device"] = "MACHINE" + str(m["id"])
-            e["status"] = services.machines.check_status(ip, m["id"])
-            if m["check_work_status"]:
-                try:
-                    e["info"]["work_status"] = services.machines.check_work_status(ip, m["id"])
-                except:
-                    e["info"]["work_status"] = "N/A"
-            if m["check_envinronment"]:
-                try:
-                    e["info"]["envinronment"] = services.machines.check_envinronment(ip, m["id"])
-                except:
-                    e["info"]["envnronment"] = "N/A"
-            
-            if e["status"] == None:
-                e["status"] = "offline"
-            if e["info"]["work_status"] == None:
-                e["info"]["work_status"] = "offline"
-            if e["info"]["envinronment"] == None:
-                e["info"]["envinronment"] = "offline"
+            try:
+                e = {}
+                e["info"] = {}
+                ip = m["ip"]
+                e["device"] = "MACHINE" + str(m["id"])
+                e["status"] = services.machines.check_status(ip, m["id"])
+                if m["check_work_status"]:
+                    try:
+                        e["info"]["work_status"] = services.machines.check_work_status(ip, m["id"])
+                    except:
+                        e["info"]["work_status"] = "N/A"
+                if m["check_envinronment"]:
+                    try:
+                        e["info"]["envinronment"] = services.machines.check_envinronment(ip, m["id"])
+                    except:
+                        e["info"]["envinronment"] = "N/A"
+                
+                if e["status"] == None:
+                    e["status"] = "offline"
+                if e["info"]["work_status"] == None:
+                    e["info"]["work_status"] = "offline"
+                if e["info"]["envinronment"] == None:
+                    e["info"]["envinronment"] = "offline"
+            except:
+                pass
 
             yield e
 
