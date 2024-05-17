@@ -252,16 +252,16 @@ class MachineFDMListEntry(QFrame):
                     pass
             if "job" in self.machine["info"] and self.machine["info"]["job"] != "N/A":
                 try:
-                    estimated_time = self.machine["info"]["job"]["job"]["estimatedPrintTime"]
+                    estimated_time = self.machine["info"]["job"]["progress"]["printTimeLeft"]
                     progress = self.machine["info"]["job"]["progress"]["completion"]
                     if estimated_time != None:
                         estimated_time = int(estimated_time)
                         self.machine_time_left_label.setText(f"Осталось: {utils.seconds_to_str(estimated_time)}")
                     if progress != None:
-                        progress = round(progress, 2)
-                        progress = str(progress).split(".")[-1]
-                        progress = progress.lstrip('0')
-                        self.machine_process_label.setText(f"Прогресс: {progress}%")
+                        #progress = round(progress, 2)
+                        #progress = str(progress).split(".")[-1]
+                        #progress = progress.lstrip('0')
+                        self.machine_process_label.setText(f"Прогресс: {int(progress)}%")
                 except:
                     pass
         
