@@ -23,7 +23,6 @@ class Monitoring:
     
     def update(self, date, device, status, info):
         connection, cursor = self.db.get_conn_cursor()
-        print(device)
         cursor.execute("INSERT INTO monitoring (device, time_scanned, status, info) VALUES (%s, %s, %s, %s) ON CONFLICT (device) DO UPDATE SET time_scanned=excluded.time_scanned, status=excluded.status, info=excluded.info", 
         (device, date, status, info))
         connection.commit()

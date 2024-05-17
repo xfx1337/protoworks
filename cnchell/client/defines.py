@@ -166,3 +166,5 @@ SLAVES_TYPES_TRANSLATIONS_BACKWARDS = {
     "SLA": 3,
     "MILL": 4
 }
+
+FDM_API_KEY_DEFAULT = "Flvbybcnhfnjh"

@@ -30,6 +30,6 @@ def get_monitoring_configuration():
         ip = db.slaves.get_slave(m["slave_id"])["ip"]
         idx = m["id"]
         conf["machines"].append({"ip": ip, "unique_info": m["unique_info"], "check_work_status": True, "check_envinronment": True, 
-        "id": idx})
+        "id": idx, "check_job": True})
     
     return conf

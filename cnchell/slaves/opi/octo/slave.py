@@ -100,7 +100,7 @@ def get_port_by_unique_info(unique_info):
     return port
 
 def kill_octo(idx):
-    os.system(f"screen -S {idx} -X quit")
+    os.system(f"runuser -l octoprint -c 'screen -S {idx} -X quit'")
     os.system(f"rm -rf /home/octoprint/.octoprint{idx}")
     print("octo killed")
 
@@ -380,7 +380,6 @@ def setup_all():
 @app.route('/api/machines/get_host', methods=['POST'])
 def get_host():
     data = request.get_json()
-    idx = data["machine_id"]
     if not os.path.isdir("octo_instances"):
         return "no instances running", 300
     
@@ -392,6 +391,30 @@ def get_host():
     host = "http://" + host + ":" + str(5001+int(idx)) + "/"
     return json.dumps({"host": host}), 200
 
+@app.route('/api/machines/job', methods=['POST'])
+def get_job():
+    if not os.path.isdir("octo_instances"):
+        return "no instances running", 300
+    
+    data = request.get_json()
+    idx = data["id"]
+    if not get_running_port(idx):
+        return "not running", 300
+
+    ret = octo_command(idx, "/api/job", {}, method='GET')
+    return ret, 200
+
+
+def clear_setup():
+    filenames = next(os.walk("octo_instances"), (None, None, []))[2]
+    ids = []
+    for f in filenames:
+        if f.split(".")[-1] == "txt":
+            ids.append(f.split(".")[0])
+            kill_octo(f.split(".")[0])
+    os.system("rm octo_instances/*")
+
+clear_setup()
 
 app.run(threaded=True, debug=False, host="0.0.0.0", port=3719)
 CORS(app)

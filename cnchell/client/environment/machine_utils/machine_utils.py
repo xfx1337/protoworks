@@ -40,6 +40,19 @@ class MachineUtils:
         if manager == GCODE_MARLIN:
             return "G28"
 
+    def get_temp_commands(self, temps, manager):
+        manager = self.get_manager(manager)
+        commands = []
+        if manager == GCODE_MARLIN:
+            for k in temps.keys():
+                if k == "ext0":
+                    t = temps[k]
+                    commands.append(f"M104 S{t}")
+                if k == "bed":
+                    t = temps[k]
+                    commands.append(f"M140 S{t}")
+        return commands
+
     def get_move_commands(self, dirx, dist, manager, feedrate=0):
         manager = self.get_manager(manager)
         dirx = self.get_dir(dirx)

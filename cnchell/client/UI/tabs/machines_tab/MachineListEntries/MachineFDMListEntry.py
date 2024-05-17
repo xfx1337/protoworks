@@ -27,6 +27,8 @@ from UI.widgets.QAskForFilesDialog import QAskForFilesDialog
 from UI.widgets.QAskForLineDialog import QAskForLineDialog
 
 from UI.tabs.machines_tab.widgets.MachineInteractiveMover import MachineInteractiveMover
+from UI.tabs.machines_tab.widgets.MachineInteractiveTemperature import MachineInteractiveTemperature
+from UI.widgets.QWebTerminal import QWebTerminal
 
 import defines
 from defines import *
@@ -54,6 +56,7 @@ class MachineFDMListEntry(QFrame):
         self.ping_signals.status_changed.connect(self.status_changed_ui)
 
         self.layout = QHBoxLayout()
+        self.main_layout = QVBoxLayout()
         self.left_layout = QVBoxLayout()
         self.right_layout = QVBoxLayout()
 
@@ -88,6 +91,12 @@ class MachineFDMListEntry(QFrame):
         self.machine_work_status_label = QLabel(f"Состояние работы: {working_state}")
         #self.machine_unique_info_label = QLabel(f"Информация: {str(unique_info)}")
 
+        self.machine_time_left_label = QLabel(f"Осталось: N/A")
+        self.machine_process_label = QLabel(f"Прогресс: N/A")
+        
+        if working_state != "Printing":
+            self.machine_time_left_label.hide()
+            self.machine_process_label.hide()
 
         self.left_layout.addWidget(self.machine_name_label)
         self.left_layout.addWidget(self.machine_idx_label)
@@ -96,6 +105,8 @@ class MachineFDMListEntry(QFrame):
         self.left_layout.addWidget(self.machine_plate_label)
         self.left_layout.addWidget(self.machine_status_label)
         self.left_layout.addWidget(self.machine_work_status_label)
+        self.left_layout.addWidget(self.machine_time_left_label)
+        self.left_layout.addWidget(self.machine_process_label)
 
         self.alert_label = QLabel("ok")
         self.left_layout.addWidget(self.alert_label)
@@ -130,9 +141,8 @@ class MachineFDMListEntry(QFrame):
 
         #self.left_layout.addWidget(self.machine_unique_info_label)
 
-        self.mover = MachineInteractiveMover(self.move, self.check_move_available)
+        self.mover = MachineInteractiveMover(self.move, self.check_online_api)
         self.right_layout.addWidget(self.mover)
-
 
         self.menu = QMenu(self)
         self.menu.setStyleSheet(stylesheets.DEFAULT_BORDER_STYLESHEET)
@@ -161,15 +171,31 @@ class MachineFDMListEntry(QFrame):
         # action_edit.triggered.connect(self.edit)
         # action_delete.triggered.connect(self.delete_slave)
 
-        self.setLayout(self.layout)
+        temps = [
+            {"id": "bed", "name": "Задать температуру стола"},
+            {"id": "ext0", "name": "Задать температуру сопла"}
+        ]
+
+        self.temps = MachineInteractiveTemperature(temps, self.submit_temps, check_online=self.check_online_api)
+
+        self.main_layout.addLayout(self.layout)
+        self.main_layout.addWidget(self.temps)
+
+        self.setLayout(self.main_layout)
 
         self.update_data()
+
+    def submit_temps(self):
+        temps = self.temps.get_temps()
+        commands = env.machine_utils.get_temp_commands(temps, self.machine["gcode_manager"])
+        if len(commands) > 0:
+            env.net_manager.machines.send_gcode_command(self.machine["id"], commands)
 
     def move(self, dirx, dist):
         command = env.machine_utils.get_move_commands(dirx, dist, self.machine["gcode_manager"])
         env.net_manager.machines.send_gcode_command(self.machine["id"], command)
 
-    def check_move_available(self):
+    def check_online_api(self):
         if self.machine["status"] == "offline":
             return False
         return True
@@ -195,6 +221,14 @@ class MachineFDMListEntry(QFrame):
             self.machine_status_label.setStyleSheet(stylesheets.NO_HIGHLIGHT)
         working_state = self.machine["work_status"]
         self.machine_work_status_label.setText(f"Состояние работы: {working_state}")
+
+        if working_state != "Printing":
+            self.machine_time_left_label.hide()
+            self.machine_process_label.hide()
+        else:
+            self.machine_time_left_label.show()
+            self.machine_process_label.show()
+
         st = False
         if "info" in self.machine:
             if "envinronment" in self.machine["info"] and self.machine["info"]["envinronment"] != "offline":
@@ -214,6 +248,20 @@ class MachineFDMListEntry(QFrame):
                         self.left_layout.addWidget(self.bed_temp_label)
                         self.left_layout.addWidget(self.extruder_temp_label)
                     st = True
+                except:
+                    pass
+            if "job" in self.machine["info"] and self.machine["info"]["job"] != "N/A":
+                try:
+                    estimated_time = self.machine["info"]["job"]["job"]["estimatedPrintTime"]
+                    progress = self.machine["info"]["job"]["progress"]["completion"]
+                    if estimated_time != None:
+                        estimated_time = int(estimated_time)
+                        self.machine_time_left_label.setText(f"Осталось: {utils.seconds_to_str(estimated_time)}")
+                    if progress != None:
+                        progress = round(progress, 2)
+                        progress = str(progress).split(".")[-1]
+                        progress = progress.lstrip('0')
+                        self.machine_process_label.setText(f"Прогресс: {progress}%")
                 except:
                     pass
         
@@ -264,8 +312,9 @@ class MachineFDMListEntry(QFrame):
         self.dlg.exec()
         if self.dlg.answer:
             host = env.net_manager.machines.get_host(self.machine["id"])
-            self.term = QWebTerminal(host)
-            self.term.show()
+            utils.message(f"Хост: {host}")
+            #self.term = QWebTerminal(host, FDM_API_KEY_DEFAULT)
+            #self.term.show()
 
     def restart_connection(self):
         env.net_manager.machines.reconnect(self.machine["id"])

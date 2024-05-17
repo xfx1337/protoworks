@@ -44,6 +44,11 @@ def check_envinronment(ip, idx):
     if r != -1:
         return r["envinronment"]
 
+def check_job(ip, idx):
+    r = send_request(ip, "/api/machines/job", {"id": idx})
+    if r != -1:
+        return r
+
 def setup_all(data):
     for s in data:
         r = send_request(s["ip"], "/api/machines/setup_all", {"machines": s["machines"]}, ret_text=True)

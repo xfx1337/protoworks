@@ -37,6 +37,7 @@ class Watchdog:
                 ip = m["ip"]
                 e["device"] = "MACHINE" + str(m["id"])
                 e["status"] = services.machines.check_status(ip, m["id"])
+                e["info"]["job"] = {}
                 if m["check_work_status"]:
                     try:
                         e["info"]["work_status"] = services.machines.check_work_status(ip, m["id"])
@@ -48,6 +49,12 @@ class Watchdog:
                     except:
                         e["info"]["envinronment"] = "N/A"
                 
+                if m["check_job"]:
+                    try:
+                        e["info"]["job"] = services.machines.check_job(ip, m["id"])
+                    except:
+                        e["info"]["job"] = "N/A"
+
                 if e["status"] == None:
                     e["status"] = "offline"
                 if e["info"]["work_status"] == None:
