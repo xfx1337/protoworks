@@ -16,6 +16,7 @@ from UI.widgets.QChooseManyCheckBoxes import QChooseManyCheckBoxes
 from UI.widgets.QAskForNumberDialog import QAskForNumberDialog
 
 from UI.widgets.QAreUSureDialog import QAreUSureDialog
+from UI.widgets.QAskForDirectoryDialog import QAskForDirectoryDialog
 
 from environment.environment import Environment
 env = Environment()
@@ -23,6 +24,8 @@ env = Environment()
 from environment.task_manager.Progress import Progress
 
 from PySide6.QtCore import Signal, QObject
+
+import gcode_utils
 
 class AddMachineWindow(QWidget):
     def __init__(self, slave_idx):
@@ -71,7 +74,13 @@ class AddMachineWindow(QWidget):
             self.close()
             return
         
-        self.unique_info = env.net_manager.slaves.get_unique_info(self.slave["id"], self.device)
+        x = -1
+        machines = env.net_manager.machines.get_machines_list()["machines"]
+        for m in machines:
+            if int(m["id"]) > x:
+                x = int(m["id"])
+
+        self.unique_info = {"data": str(x+1)}
         self.label.setText(f"Подключён {self.device} с уникальной информацией: \n{str(self.unique_info)}. Нажмитее далее для перехода к настройке станка")
         
         self.btn_next.callback = self.machine_settings
@@ -92,6 +101,7 @@ class AddMachineWindow(QWidget):
         self.delta_height_input = QUserInput("Высота принтера кинематики дельта: ", corner_align=True)
         self.baudrate_input = QUserInput("Баудрейт: ", corner_align=True)
         self.gcode_manager_select = QChooseManyCheckBoxes("Выберите тип GCODE", GCODE_TYPES_STR, allow_only_one=True)
+        self.enable_unique_info_on_sd = QCheckBox("Хранить уникальную информацию на SD?")
 
         self.btn_next.hide()
 
@@ -105,12 +115,27 @@ class AddMachineWindow(QWidget):
         self.layout.addWidget(self.delta_height_input)
         self.layout.addWidget(self.baudrate_input)
         self.layout.addWidget(self.gcode_manager_select)
+        self.layout.addWidget(self.enable_unique_info_on_sd)
 
         self.btn_finish = QInitButton("Добавить станок", callback=self.add_machine_finish)
         self.layout.addWidget(self.btn_finish)
     
 
     def add_machine_finish(self):
+        if self.enable_unique_info_on_sd:
+            dlg = QAskForDirectoryDialog("Выберите sd карту")
+            dlg.exec()
+            folder = dlg.fname
+            fname = self.unique_info["data"]
+            open(os.path.join(folder, f"PWP{fname}.gcode"), "a").close()
+
+            # fname = self.unique_info["data"]
+            # fname = f"PWP{fname}.gco"
+            # commands = [f"M28 {fname}", gcode_utils.convert("G28", 1), "M29"]
+            # env.net_manager.machines.send_gcode_command(-1, commands, self.slave["id"], self.device)
+
+        else:
+            self.unique_info = "-1"
         x = -1
         y = -1
         z = -1

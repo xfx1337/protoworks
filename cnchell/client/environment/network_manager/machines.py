@@ -68,8 +68,8 @@ class Machines:
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)
 
-    def send_gcode_command(self, machine_id, command):
-        r = self.net_manager.request("/api/machines/send_gcode", {"machine_id": machine_id, "gcode": command})
+    def send_gcode_command(self, machine_id, command, slave_id=-1, device=-1):
+        r = self.net_manager.request("/api/machines/send_gcode", {"machine_id": machine_id, "gcode": command, "slave_id": slave_id, "device": device})
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)
 
@@ -91,6 +91,11 @@ class Machines:
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)
 
+    def pause_job(self, machine_id):
+        r = self.net_manager.request("/api/machines/cancel_job", {"machine_id": machine_id, "pause": True})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)
+
     def start_job(self, machine_id, file):
         r = self.net_manager.request("/api/machines/start_job", {"machine_id": machine_id, "file": file})
         if r.status_code != 200:
@@ -101,3 +106,8 @@ class Machines:
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)
         return r.json()["host"]
+
+    def delete(self, machine_id):
+        r = self.net_manager.request("/api/machines/delete", {"id": machine_id})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)

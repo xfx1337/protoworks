@@ -10,7 +10,7 @@ from database.materials import Materials
 from database.parts import Parts
 from database.programs_configs import ProgramsConfigs
 from database.machines import Machines
-from database.work_order_parts import WorkOrderParts
+from database.work_queue import WorkQueue
 from database.storage import Storage
 from database.audit import Audit
 from database.files_logging import FilesLogging
@@ -46,7 +46,7 @@ class Database:
         self.parts = Parts(self)
         self.programs_configs = ProgramsConfigs(self)
         self.machines = Machines(self)
-        self.work_order_parts = WorkOrderParts(self)
+        self.work_queue = WorkQueue(self)
         self.storage = Storage(self)
         self.audit = Audit(self)
         self.files_logging = FilesLogging(self)

@@ -199,9 +199,15 @@ def send_gcode(request):
     idx = data["machine_id"]
     gcode = data["gcode"]
 
-    machine = db.machines.get_machine(int(idx))
-    slave = db.slaves.get_slave(machine["slave_id"])
-    r = requests.post(slave["ip"] + "/api/machines/send_gcode", json = {"unique_info":json.loads(machine["unique_info"].replace("'", '"')), "id": machine["id"], "command": gcode})
+    
+    if idx != -1:
+        machine = db.machines.get_machine(int(idx))
+        slave = db.slaves.get_slave(machine["slave_id"])
+        r = requests.post(slave["ip"] + "/api/machines/send_gcode", json = {"unique_info":json.loads(machine["unique_info"].replace("'", '"')), "id": machine["id"], "command": gcode})
+    else:
+        slave = db.slaves.get_slave(data["slave_id"])
+        device = data["device"]
+        r = requests.post(slave["ip"] + "/api/machines/send_gcode", json = {"unique_info":"", "id": -1, "command": gcode, "device": device})
 
     return "Успешно", 200
 
@@ -229,10 +235,14 @@ def cancel_job(request):
         return "Токен не валиден", 403
     
     idx = data["machine_id"]
+    if "pause" in data:
+        pause = data["pause"]
+    else:
+        pause = False
 
     machine = db.machines.get_machine(int(idx))
     slave = db.slaves.get_slave(machine["slave_id"])
-    r = requests.post(slave["ip"] + "/api/machines/cancel_job", json = {"unique_info":json.loads(machine["unique_info"].replace("'", '"')), "id": machine["id"]})
+    r = requests.post(slave["ip"] + "/api/machines/cancel_job", json = {"unique_info":json.loads(machine["unique_info"].replace("'", '"')), "id": machine["id"], "pause": pause})
 
     return r.text, 200
 
@@ -286,3 +296,11 @@ def start_job(request):
     r = requests.post(slave["ip"] + "/api/machines/start_job", json = {"unique_info":json.loads(machine["unique_info"].replace("'", '"')), "id": machine["id"], "file": file})
 
     return r.text, 200
+
+def delete(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+
+    idx = data["machine_id"]

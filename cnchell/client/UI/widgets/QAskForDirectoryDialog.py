@@ -17,6 +17,8 @@ class QAskForDirectoryDialog(QDialog):
 
         self.callback_no = callback_no
 
+        self.fname = ""
+
         self.setWindowTitle("Загрузка директории проекта")
         self.setWindowIcon(templates_manager.icons["cnchell"])
 
@@ -42,6 +44,8 @@ class QAskForDirectoryDialog(QDialog):
         )
         if fname != "":
             fname = fname.replace("/", "\\") + "\\"
+
+        self.fname = fname
 
         self.close()
         if self.callback_yes != None:

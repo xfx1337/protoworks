@@ -315,6 +315,22 @@ def restart_all():
 def get_host():
     return services.machines.get_host(request)
 
+@app.route('/api/machines/delete', methods=['POST'])
+def delete_machine():
+    return services.machines.delete(request)
+
+@app.route('/api/work_queue/add_jobs', methods=['POST'])
+def add_job_to_order():
+    return services.work_queue.add_jobs(request)
+
+@app.route('/api/work_queue/get_jobs', methods=['POST'])
+def get_order():
+    return services.work_queue.get_jobs(request)
+
+@app.route('/api/work_queue/delete_jobs', methods=['POST'])
+def delete_from_order():
+    return services.work_queue.delete_jobs(request)
+
 @socketio.on("send_monitoring_update")
 def check_online(message):
     services.monitoring.update_monitoring(json.loads(message))

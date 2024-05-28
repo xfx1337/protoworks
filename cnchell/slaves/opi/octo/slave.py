@@ -26,6 +26,10 @@ app = Flask(__name__)
 CORS(app)
 #socketio = SocketIO(app, async_mode='threading') # should be somthing like gunicorn, gevent or else...
 
+unique_infos = {}
+ports_in_use = []
+
+
 def get_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
@@ -35,17 +39,13 @@ def get_local_ip():
 
 
 def replace_all(file_path, pattern, subst):
-    #Create temp file
     fh, abs_path = mkstemp()
     with fdopen(fh,'w') as new_file:
         with open(file_path) as old_file:
             for line in old_file:
                 new_file.write(line.replace(pattern, subst))
-    #Copy the file permissions from the old file to the new file
     copymode(file_path, abs_path)
-    #Remove original file
     remove(file_path)
-    #Move new file
     move(abs_path, file_path)
 
 def list_serial():
@@ -60,44 +60,50 @@ def get_available_machines(request):
     machines = list_serial()
     return json.dumps({"machines": machines}), 200
 
+
 def get_unique_machine_data(port):
-    def clear_string(s): # fuck it
-        return s.rstrip().replace("\n", "").replace("\r", "").replace("\\n", "").replace("\'b", "").replace("\\'", "").replace("\'", "").replace('"', "")
-
-    process = subprocess.Popen(f"udevadm info -q all -n {port} --attribute-walk", shell=True, stdout=subprocess.PIPE)
-    out = ""
-    for line in process.stdout:
-        out += str(line)
-    process.wait()
-
-    found = re.findall("ATTRS\{idProduct\}==(.*?)ATTRS", out)
-
-    groups = []
-
-    for i in range(len(found)):
-        groups.append({})
-        groups[i]["idProduct"] = clear_string(found[i])
-
-    found = re.findall("ATTRS\{idVendor\}==(.*?)ATTRS", out)
-    for i in range(len(found)):
-        groups[i]["idVendor"] = clear_string(found[i])
-
-    # found = re.findall("ATTRS\{devpath\}==(.*?)ATTRS", out)
-    # for i in range(len(found)):
-    #     groups[i]["devpath"] = clear_string(found[i])
-
-    return groups
+    global unique_infos
+    uuid = ""
+    try:
+        ser = serial.Serial(port, baudrate=115200)
+        ser.write('\r\nM20\r\n'.encode())
+        st = time.time()
+        line = []
+        lines = []
+        while time.time() - 5 < st:
+            line = ser.readline()
+            try:
+                line = line.decode()
+                lines.append(line)
+            except:
+                continue
+            if "End file list" in line:
+                break
+        ser.close()
+        for f in lines:
+            if "PWP" in f:
+                uuid = f.split("PWP")[-1].split("~")[0].split(".gcode")[0]
+        unique_infos[uuid] = port
+        return uuid
+    except Exception as e:
+        print(e)
+        return "N/A"
 
 def get_port_by_unique_info(unique_info):
-    ports = list_serial()
-    port = None
-    for p in ports:
-        ui = get_unique_machine_data(p)
-        if ui == unique_info["data"]:
-            port = p
-            break
+    if type(unique_info) == dict:
+        unique_info = unique_info["data"]
+    global unique_infos
+    if unique_info in unique_infos.keys():
+        return unique_infos[unique_info]
 
-    return port
+    machines = list_serial()
+    for m in machines:
+        if m not in ports_in_use:
+            uuid = get_unique_machine_data(m)
+            if uuid == unique_info:
+                unique_infos[uuid] = m
+                return m
+    return ""
 
 def kill_octo(idx):
     os.system(f"runuser -l octoprint -c 'screen -S {idx} -X quit'")
@@ -112,7 +118,9 @@ def write_octo(idx):
     print("octo written")
 
 def run_octo(idx, port):
+    global ports_in_use
     os.system(f"runuser -l octoprint -c 'screen -dmS {idx} /home/octoprint/OctoPrint/venv/bin/octoprint serve --port={5001+int(idx)} --config /home/octoprint/.octoprint{idx}/config.yaml --basedir /home/octoprint/.octoprint{idx}/'")
+    ports_in_use.append(port)
     print("octo started up")
 
 def octo_command(idx, link, data, ret_text=False, method="POST"):
@@ -134,6 +142,7 @@ def get_running_port(idx):
     return port
 
 def restart_handler_back(unique_info, idx):
+    global ports_in_use
     port = get_port_by_unique_info(unique_info)
     if port == None:
         return "machine not connected", 300
@@ -148,6 +157,15 @@ def restart_handler_back(unique_info, idx):
         except:
             pass
     try:
+        with open(f"octo_instances/{script_name}", "r") as f:
+            content = f.readline().strip()
+        if content in ports_in_use:
+            try:
+                i = ports_in_use.index(content)
+                if i != -1:
+                    del ports_in_use[i]
+            except:
+                pass
         os.remove(f"octo_instances/{script_name}")
     except:
         pass
@@ -239,13 +257,23 @@ def send():
     idx = data["id"]
     command = data["command"]
 
-    if not get_running_port(idx):
-        return "not running", 300
+    if idx != -1:
+        if not get_running_port(idx):
+            return "not running", 300
 
-    if type(command) == list:
-        for c in command:
-            tx = octo_command(idx, "/api/printer/command", {"command": c}, ret_text=True)
-    tx = octo_command(idx, "/api/printer/command", {"command": command}, ret_text=True)
+        if type(command) == list:
+            for c in command:
+                tx = octo_command(idx, "/api/printer/command", {"command": c}, ret_text=True)
+        tx = octo_command(idx, "/api/printer/command", {"command": command}, ret_text=True)
+    else:
+        device = data["device"]
+        ser = serial.Serial(device, baudrate=115200)
+        if type(command) == list:
+            for c in command:
+                ser.write(f'\r\n{c}\r\n'.encode())
+        else:
+            ser.write(f'\r\n{command}\r\n'.encode())
+        ser.close()
 
     return "done", 200
 
@@ -292,6 +320,11 @@ def cancel_job():
     idx = data["id"]
     if not get_running_port(idx):
         return "not running", 300
+    
+    if "pause" in data:
+        if data["pause"] == True:
+            ret = octo_command(idx, "/api/job", {"command": "pause", "action": "toggle"},)
+            return ret, 200
 
     ret = octo_command(idx, "/api/job", {"command": "cancel"},)
     return ret, 200

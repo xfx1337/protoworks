@@ -154,7 +154,7 @@ class MachineFDMListEntry(QFrame):
         action_open_terminal = self.menu.addAction("Открыть терминал(LAN)")
         action_pause = self.menu.addAction("Пауза")
         action_stop = self.menu.addAction("Отменить работу")
-        action_edit = self.menu.addAction("Редактировать")
+        #action_edit = self.menu.addAction("Редактировать")
         action_delete = self.menu.addAction("Удалить")
 
         action_force_start.triggered.connect(self.force_start)
@@ -162,7 +162,9 @@ class MachineFDMListEntry(QFrame):
         action_restart_connection.triggered.connect(self.restart_connection)
         action_open_terminal.triggered.connect(self.open_terminal)
         action_send_command.triggered.connect(self.send_command)
+        action_delete.triggered.connect(self.delete_self)
         action_stop.triggered.connect(self.stop_job)
+        action_pause.triggered.connect(self.pause_job)
 
         # action_ping.triggered.connect(self.ping_host)
         # action_info.triggered.connect(self.define)
@@ -184,6 +186,24 @@ class MachineFDMListEntry(QFrame):
         self.setLayout(self.main_layout)
 
         self.update_data()
+
+    def pause_job(self):
+        env.net_manager.machines.pause_job(self.machine["id"])
+        utils.message("Запрос отправлен", tittle="Оповещение")
+
+
+    def delete_self(self):
+        self.dlg = QYesOrNoDialog("Вы уверены, что хотите удалить станок?")
+        self.dlg.exec()
+        if self.dlg.answer:
+            # TODO: request parts reorder
+            try:
+                env.net_manager.machines.delete(self.machine["id"])
+                self.hide()
+                if self.parent() != None:
+                    self.setParent(None)
+            except:
+                pass
 
     def submit_temps(self):
         temps = self.temps.get_temps()
