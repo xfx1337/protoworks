@@ -68,3 +68,7 @@ class MachineUtils:
             commands.append("G90")
         
         return commands
+
+    def calculate_job_time_by_file(self, file):
+        #TODO: make it for FDM
+        return 0

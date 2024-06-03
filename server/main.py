@@ -27,6 +27,10 @@ import services.parts
 import services.slaves
 import services.machines
 import services.monitoring
+import services.work_queue
+import services.bindings
+import services.actions
+import services.events
 
 from common import *
 
@@ -331,10 +335,31 @@ def get_order():
 def delete_from_order():
     return services.work_queue.delete_jobs(request)
 
+@app.route('/api/bindings/add', methods=['POST'])
+def add_bind():
+    return services.bindings.add(request)
+
+@app.route('/api/bindings/remove', methods=['POST'])
+def remove_bind():
+    return services.bindings.remove(request)
+
+@app.route('/api/bindings/get_event_by_action', methods=['POST'])
+def get_event_by_action():
+    return services.bindings.get_event_by_action(request)
+
+@app.route("/api/actions/execute", methods=['POST'])
+def execute_event():
+    return services.actions.execute(request)
+
 @socketio.on("send_monitoring_update")
 def check_online(message):
     services.monitoring.update_monitoring(json.loads(message))
     emit('ret', {'data': 'got it.'})
+
+@socketio.on("event")
+def execute_action_io(message):
+    services.events.event_io(json.loads(message))
+    emit('ret', {'data': 'got it'})
 
 @socketio.on('connect')
 def connect():

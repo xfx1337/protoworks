@@ -25,7 +25,7 @@ class Hub:
         cursor.execute("SELECT * FROM hub")
         c = cursor.fetchone()
         if c == None:
-            return None
+            return {}
 
         hostname = c[1]
         ip = c[2]

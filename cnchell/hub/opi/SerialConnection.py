@@ -16,7 +16,7 @@ class SerialConnection(threading.Thread):
         self.write_queue = QueueUnique()
         self.read_queue = QueueAutoDelete()
         self.ser = serial.Serial(self.port, self.baudrate)
-        self.ser.set_low_latency_mode(True)
+        #self.ser.set_low_latency_mode(True)
         self.daemon = True
         self.send_next_after = "ok"
         self.start()

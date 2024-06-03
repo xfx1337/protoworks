@@ -12,7 +12,10 @@ def update_monitoring(e):
     except:
         info = {}
 
-    db.monitoring.update(date, device, status, json.dumps(info))
+    if device != "ARDUINOHUB":
+        db.monitoring.update(date, device, status, json.dumps(info))
+    else:
+        print(e)
 
 def get_monitoring_configuration():
     # TODO: changable

@@ -29,6 +29,8 @@ from UI.widgets.QAskForLineDialog import QAskForLineDialog
 from UI.tabs.machines_tab.widgets.MachineInteractiveMover import MachineInteractiveMover
 from UI.tabs.machines_tab.widgets.MachineInteractiveTemperature import MachineInteractiveTemperature
 from UI.widgets.QWebTerminal import QWebTerminal
+from UI.tabs.machines_tab.QueueWindow import QueueWindow
+from UI.tabs.machines_tab.MachineListEntriesWindows.FDMBindingsWindow import FDMBindingsWindow
 
 import defines
 from defines import *
@@ -152,6 +154,7 @@ class MachineFDMListEntry(QFrame):
         action_restart_connection = self.menu.addAction("Перезапустить соединение станка с обработчиком")
         action_send_command = self.menu.addAction("Отправить команду")
         action_open_terminal = self.menu.addAction("Открыть терминал(LAN)")
+        action_bindings = self.menu.addAction("Бинды")
         action_pause = self.menu.addAction("Пауза")
         action_stop = self.menu.addAction("Отменить работу")
         #action_edit = self.menu.addAction("Редактировать")
@@ -162,9 +165,12 @@ class MachineFDMListEntry(QFrame):
         action_restart_connection.triggered.connect(self.restart_connection)
         action_open_terminal.triggered.connect(self.open_terminal)
         action_send_command.triggered.connect(self.send_command)
+        action_bindings.triggered.connect(self.open_bindings_window)
         action_delete.triggered.connect(self.delete_self)
         action_stop.triggered.connect(self.stop_job)
         action_pause.triggered.connect(self.pause_job)
+
+        action_queue.triggered.connect(self.open_queue)
 
         # action_ping.triggered.connect(self.ping_host)
         # action_info.triggered.connect(self.define)
@@ -186,6 +192,14 @@ class MachineFDMListEntry(QFrame):
         self.setLayout(self.main_layout)
 
         self.update_data()
+
+    def open_bindings_window(self):
+        self.dlg = FDMBindingsWindow(self.slave, self.machine)
+        self.dlg.show()
+
+    def open_queue(self):
+        self.queue_show = QueueWindow(self.slave, self.machine)
+        self.queue_show.show()
 
     def pause_job(self):
         env.net_manager.machines.pause_job(self.machine["id"])

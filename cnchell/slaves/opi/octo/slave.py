@@ -286,7 +286,6 @@ def check_online():
     idx = data["id"]
     if not get_running_port(idx):
         return json.dumps({"status": "offline"}), 200
-
     return json.dumps({"status": "online"}), 200
 
 @app.route('/api/machines/check_work_status', methods=['POST'])

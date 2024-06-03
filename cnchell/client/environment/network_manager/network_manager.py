@@ -11,6 +11,8 @@ from environment.network_manager.materials import Materials
 from environment.network_manager.hardware import Hardware
 from environment.network_manager.slaves import Slaves
 from environment.network_manager.machines import Machines
+from environment.network_manager.work_queue import WorkQueue
+from environment.network_manager.bindings import Bindings
 
 import exceptions
 
@@ -33,6 +35,8 @@ class NetworkManager:
         self.hardware = Hardware(self)
         self.slaves = Slaves(self)
         self.machines = Machines(self)
+        self.work_queue = WorkQueue(self)
+        self.bindings = Bindings(self)
 
         self._auto_login = False
 

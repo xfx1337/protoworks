@@ -7,6 +7,8 @@ class Watchdog:
         self.devices = []
         self.server_ip = None
         self.connected = False
+        self.arduino_hub_connected = False
+        self.arduino_serial_connection = None
         self.conf = None
 
     def get_events_slave(self):
@@ -57,6 +59,8 @@ class Watchdog:
 
                 if e["status"] == None:
                     e["status"] = "offline"
+                if e["info"]["work_status"] != None and e["info"]["work_status"] != "N/A":
+                    e["status"] = "online"
                 if e["info"]["work_status"] == None:
                     e["info"]["work_status"] = "offline"
                 if e["info"]["envinronment"] == None:

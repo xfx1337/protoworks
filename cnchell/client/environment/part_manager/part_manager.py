@@ -86,11 +86,14 @@ class PartManager:
             files[i] = files[i].replace("/", "\\")
         
         relative_files = []
+        not_parts = []
         for f in files:
             if self.env.config_manager["path"]["projects_path"] in f:
                 path_p = utils.remove_path(self.env.config_manager["path"]["projects_path"], f)
                 relative_files.append(path_p)
+            else:
+                not_parts.append(f)
         if len(relative_files) > 0: 
             parts = self.env.net_manager.parts.indentify_parts(relative_files)
-            return parts
-        return []
+            return parts, not_parts
+        return [], not_parts

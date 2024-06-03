@@ -18,6 +18,7 @@ from database.machines import Machines
 from database.slaves import Slaves
 from database.hub import Hub
 from database.monitoring import Monitoring
+from database.external_bindings import Bindings
 
 import exceptions
 
@@ -26,7 +27,7 @@ class Database:
     def __init__(self):
         #try: connection = psycopg2.connect(dbname='protoworks', user='postgres', password='Flvbybcnhfnjh', host='localhost')
         #except: raise exceptions.DatabaseInitFailed("failed to init db")
-        
+        self.connected = 0
         try:
             self.connection_pool = psycopg2.pool.ThreadedConnectionPool(5, 20, dbname='protoworks', 
             user='postgres', password='Flvbybcnhfnjh', host='localhost')
@@ -54,11 +55,15 @@ class Database:
         self.slaves = Slaves(self)
         self.machines = Machines(self)
         self.monitoring = Monitoring(self)
+        self.bindings = Bindings(self)
 
     def get_conn_cursor(self):
+        self.connected += 1
         connection = self.connection_pool.getconn()
         cursor = connection.cursor()
         return connection, cursor
     def close(self, conn):
         conn.cursor().close()
         self.connection_pool.putconn(conn)
+        self.connected -= 1
+        print(f"connected: {self.connected}/20")

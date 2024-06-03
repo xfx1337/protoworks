@@ -31,7 +31,7 @@ class Parts:
         parts = []
         content = cursor.fetchall()
         for p in content:
-            part = {"id": p[1], "name": p[3], "path": p[4], "count_need": p[5], "count_done": p[6], "status": p[7]}
+            part = {"id": p[1], "name": p[3], "path": p[4], "count_need": p[5], "count_done": p[6], "status": p[7], "project_id": project_id}
             parts.append(part)
         self.db.close(connection)
         return parts
@@ -42,7 +42,7 @@ class Parts:
         cursor.execute(sql)
         p = cursor.fetchone()
         if p != None:
-            part = {"id": p[1], "name": p[3], "path": p[4], "count_need": p[5], "count_done": p[6], "status": p[7]}
+            part = {"id": p[1], "name": p[3], "path": p[4], "count_need": p[5], "count_done": p[6], "status": p[7], "project_id": project_id}
             return part
         self.db.close(connection)
         return
@@ -53,7 +53,7 @@ class Parts:
         cursor.execute(sql)
         p = cursor.fetchone()
         if p != None:
-            part = {"id": p[1], "name": p[3], "path": p[4], "count_need": p[5], "count_done": p[6], "status": p[7]}
+            part = {"id": p[1], "name": p[3], "path": p[4], "count_need": p[5], "count_done": p[6], "status": p[7], "project_id": project_id}
             return part
         self.db.close(connection)
         return

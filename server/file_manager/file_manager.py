@@ -117,15 +117,20 @@ class FileManager:
 
         return zip_filename
     
-    def unzip_data_archive(self, path):
+    def unzip_data_archive(self, path, direct_folder=None):
         data = ""
         with zipfile.ZipFile(path, 'r') as archive:
             with archive.open('PROTOWORKS_DATA.txt') as data_file:
                 data = str(data_file.read().decode('UTF-8'))
                 data = zip_data_file_decoder.decode(data)
             
-            server_path = data["project"]["server_path"]
-            
+            try:
+                server_path = data["project"]["server_path"]
+            except:
+                pass
+            if direct_folder != None:
+                server_path = direct_folder
+
             # if "dirs" in data:
             #     for d in data["dirs"]:
             #         os.mkdir(os.path.join(server_path, d))

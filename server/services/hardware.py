@@ -146,13 +146,22 @@ def get_hub_info(request):
     
     d = db.hub.get_hub_info()
     d["info"] = "NO DATA"
-    ip = d["ip"]
-    hostname = d["hostname"]
-    
+    try:
+        ip = d["ip"]
+    except:
+        ip = None
+    try:
+        hostname = d["hostname"]
+    except:
+        hostname = None
+
+
     hostname, ip = utils.get_hostname_ip(hostname, ip)
     db.hub.set_hub_info(hostname, ip)
-
-    d["ping"] = utils.get_ping(ip)
+    try:
+        d["ping"] = utils.get_ping(ip)
+    except:
+        d["ping"] = -1
     try:
         d["status"] = db.monitoring.get_device("MAIN_HUB")["status"]
     except:

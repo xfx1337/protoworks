@@ -315,7 +315,7 @@ class PartsListView(QWidget):
         self.btn_resolve_deletion.setStyleSheet(UI.stylesheets.adapt(UI.stylesheets.RED_HIGHLIGHT, "QLabel", "QInitButton"))
 
     def on_file_drop(self, files):
-        parts = env.part_manager.indentify_parts(files)
+        parts, not_parts = env.part_manager.indentify_parts(files)
         parts_real = []
         for p in parts:
             if p != None:

