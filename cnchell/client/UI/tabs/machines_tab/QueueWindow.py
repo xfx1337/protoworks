@@ -3,6 +3,7 @@ from PySide6.QtWidgets import QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QL
 from PySide6.QtCore import QTimer
 
 import os, shutil
+import time
 
 import utils
 from defines import *
@@ -23,10 +24,16 @@ from environment.task_manager.Progress import Progress
 
 from PySide6.QtCore import Signal, QObject
 
+class QueueSignals(QObject):
+    update_queue = Signal(list)
+
 class QueueWindow(QWidget):
     def __init__(self, slave, machine):
         super().__init__()
         self.setStyleSheet(stylesheets.TOOLTIP)
+
+        self.signals = QueueSignals()
+        self.signals.update_queue.connect(self.update_data)
 
         machine_name = machine["name"]
         self.setWindowTitle(f"Очередь станка {machine_name}")
@@ -58,7 +65,11 @@ class QueueWindow(QWidget):
 
         self.job_entries = []
 
-        self.update_data()
+        self.old_queue = None
+
+        env.task_manager.run_silent_task(self.update_thread)
+
+        #self.update_data()
 
     def add_to_order_drag(self, files):
         parts, not_parts = env.part_manager.indentify_parts(files)
@@ -86,9 +97,21 @@ class QueueWindow(QWidget):
 
         env.net_manager.work_queue.add_jobs(jobs, files_send)
 
+    def update_thread(self):
+        while self.isVisible():
+            queue = env.net_manager.work_queue.get_queue(self.machine["id"])
+            queue = sorted(queue, key = lambda key: key["index"])
+
+            self.signals.update_queue.emit(queue)
+
+            time.sleep(2)
+
     def update_data(self):
         queue = env.net_manager.work_queue.get_queue(self.machine["id"])
         queue = sorted(queue, key = lambda key: key["index"])
+
+        if queue == self.old_queue:
+            return
 
         for p in self.job_entries:
             if p.parent() != None:
@@ -104,3 +127,5 @@ class QueueWindow(QWidget):
             self.scrollWidgetLayout.setAlignment(p, Qt.AlignmentFlag.AlignTop)
 
             self.job_entries.append(p)
+        
+        self.old_queue = queue

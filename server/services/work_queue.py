@@ -74,3 +74,39 @@ def delete_jobs(request):
     db.work_queue.delete_jobs(indexes, machine_id)
 
     return "", 200
+
+def get_job_by_id(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+    
+    idx = data["id"]
+    ret = db.work_queue.get_job_by_id(idx)
+
+    return json.dumps({"job": ret}), 200
+
+def move_job(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+    
+    machine_id = data["machine_id"]
+    fr = data["from"]
+    to = data["to"]
+    db.work_queue.move_job(fr, to, machine_id)
+
+    return "Изменено", 200
+
+def overwrite_job(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+    
+    job = data["job"]
+    idx = data["id"]
+    db.work_queue.overwrite_job(idx, json.loads(job))
+
+    return "Изменено", 200

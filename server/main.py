@@ -335,6 +335,18 @@ def get_order():
 def delete_from_order():
     return services.work_queue.delete_jobs(request)
 
+@app.route('/api/work_queue/get_job_by_id', methods=['POST'])
+def get_job_by_id():
+    return services.work_queue.get_job_by_id(request)
+
+@app.route('/api/work_queue/move_job', methods=['POST'])
+def move_job():
+    return services.work_queue.move_job(request)
+
+@app.route('/api/work_queue/overwrite_job', methods=['POST'])
+def overwrite_job():
+    return services.work_queue.overwrite_job(request)
+
 @app.route('/api/bindings/add', methods=['POST'])
 def add_bind():
     return services.bindings.add(request)

@@ -66,3 +66,20 @@ class WorkQueue:
         r = self.net_manager.request("/api/work_queue/delete_jobs", {"indexes": indexes, "machine_id": machine_id})
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)
+
+    def get_job_by_id(self, idx):
+        r = self.net_manager.request("/api/work_queue/get_job_by_id", {"id": idx})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)
+        
+        return json.loads(r.text)["job"]
+
+    def move_job(self, fr, to, machine_id):
+        r = self.net_manager.request("/api/work_queue/move_job", {"from": fr, "to": to, "machine_id": machine_id})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)
+    
+    def overwrite_job(self, idx, job):
+        r = self.net_manager.request("/api/work_queue/overwrite_job", {"job": json.dumps(job), "id": idx})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)

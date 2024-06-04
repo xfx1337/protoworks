@@ -98,4 +98,38 @@ class WorkQueue:
         connection.commit()
         self.db.close(connection)
 
-        
+    def get_job_by_id(self, idx):
+        connection, cursor = self.db.get_conn_cursor()
+        cursor.execute("SELECT * FROM work_queue WHERE id=%s", [idx])
+        c = cursor.fetchone()
+        self.db.close(connection)    
+        if c == None:
+            return c
+        ret = {"id": c[0], "machine_id": c[1], "work_time": c[2], "work_start": c[3], "status": c[4], "index": c[5], "unique_info": json.loads(c[6])}
+
+        return ret
+
+    def move_job(self, from_index, to_index, machine_id):
+        connection, cursor = self.db.get_conn_cursor()
+        if to_index == -1:
+            cursor.execute("SELECT max(index) FROM work_queue WHERE machine_id=%s", [machine_id])
+            to_index = cursor.fetchone()
+            print(to_index)
+            if to_index == None:
+                to_index = 0
+            elif type(to_index) == list or type(to_index) == tuple:
+                to_index = to_index[0]
+            else:
+                to_index = to_index
+
+
+        cursor.execute("UPDATE work_queue SET index = %s WHERE index = %s AND machine_id = %s", [-1, from_index, machine_id])
+        if to_index < from_index:
+            cursor.execute("UPDATE work_queue SET index = index + 1 WHERE index >= %s AND index < %s AND machine_id = %s", [to_index, from_index, machine_id])
+        else: # to_index > from_index
+            cursor.execute("UPDATE work_queue SET index = index - 1 WHERE index >= %s and index <= %s AND machine_id = %s", [from_index, to_index, machine_id])
+
+        cursor.execute("UPDATE work_queue SET index = %s WHERE index = %s AND machine_id = %s", [to_index, -1, machine_id])
+
+        connection.commit()
+        self.db.close(connection)

@@ -104,16 +104,61 @@ class JobListEntry(QFrame):
 
         action_redistribution.triggered.connect(self.redistribution)
         action_delete_job.triggered.connect(self.delete_job)
+        action_make_first.triggered.connect(self.make_first)
+        action_right_now.triggered.connect(self.make_right_now)
         
 
         self.setLayout(self.layout)
 
+    def make_right_now(self):
+        self.dlg = QYesOrNoDialog("Вы действительно хотите отменить текущую работу?")
+        self.dlg.exec()
+        if not self.dlg.answer:
+            return
+
+        jobs = env.net_manager.work_queue.get_queue(self.job["machine_id"])
+        self.running_job = None
+        for j in jobs:
+            if j["status"] == "В работе":
+                self.running_job = j
+
+        self.running_job["status"] = "Ожидание"
+        env.net_manager.machines.cancel_job(self.running_job["machine_id"])
+        env.net_manager.work_queue.overwrite_job(self.running_job["id"], self.running_job)
+        env.net_manager.work_queue.move_job(self.job["index"], 0, self.job["machine_id"])
+
+
+    def make_first(self):
+        jobs = env.net_manager.work_queue.get_queue(self.job["machine_id"])
+        self.running_job = None
+        for j in jobs:
+            if j["status"] == "В работе":
+                self.running_job = j
+
+        if self.running_job == None:
+            env.net_manager.work_queue.move_job(self.job["index"], 0, self.job["machine_id"])
+        else:
+            env.net_manager.work_queue.move_job(self.job["index"], 1, self.job["machine_id"])
+
     def redistribution(self):
-        pass
+        self.dlg = QYesOrNoDialog("Вы действительно хотите снять задачу со станка?")
+        self.dlg.exec()
+        if not self.dlg.answer:
+            return
+        env.net_manager.work_queue.move_job(self.job["index"], -1, self.job["machine_id"])
+        self.job = env.net_manager.work_queue.get_job_by_id(self.job["id"])
+        self.job["machine_id"] = -1
+        env.net_manager.work_queue.overwrite_job(self.job["id"], self.job)
 
     def delete_job(self):
-        pass
-
+        self.dlg = QYesOrNoDialog("Вы действительно хотите удалить задачу?")
+        self.dlg.exec()
+        if not self.dlg.answer:
+            return
+        job_now = env.net_manager.work_queue.get_job_by_id(self.job["id"])
+        env.net_manager.work_queue.delete_jobs([self.job["index"]], self.job["machine_id"])
+        self.hide()
+        del self
     
 
     def contextMenuEvent(self, event):
