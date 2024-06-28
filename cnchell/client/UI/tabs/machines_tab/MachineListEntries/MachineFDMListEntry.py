@@ -38,16 +38,21 @@ from defines import *
 from PySide6.QtCore import Signal, QObject
 import time
 
+from PySide6.QtCore import Qt, QMimeData
+from PySide6.QtGui import QDrag
+
 class PingSignals(QObject):
     ping_finished = Signal(int)
     define_finished = Signal(str)
     status_changed = Signal(str)
 
 class MachineFDMListEntry(QFrame):
-    def __init__(self, machine, slave):
+    def __init__(self, machine, slave, drag_enable=False, enable_controls=True):
         super().__init__()
         self.machine = machine
         self.slave = slave
+
+        self.enable_controls = enable_controls
 
         self.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
         self.setLineWidth(1)
@@ -143,34 +148,35 @@ class MachineFDMListEntry(QFrame):
 
         #self.left_layout.addWidget(self.machine_unique_info_label)
 
-        self.mover = MachineInteractiveMover(self.move, self.check_online_api)
-        self.right_layout.addWidget(self.mover)
+        if self.enable_controls:
+            self.mover = MachineInteractiveMover(self.move, self.check_online_api)
+            self.right_layout.addWidget(self.mover)
 
-        self.menu = QMenu(self)
-        self.menu.setStyleSheet(stylesheets.DEFAULT_BORDER_STYLESHEET)
-        action_queue = self.menu.addAction("Открыть очередь")
-        action_force_start = self.menu.addAction("Запустить файл вне очереди")
-        action_restart_handler = self.menu.addAction("Перезапустить обработчик станка на слейве")
-        action_restart_connection = self.menu.addAction("Перезапустить соединение станка с обработчиком")
-        action_send_command = self.menu.addAction("Отправить команду")
-        action_open_terminal = self.menu.addAction("Открыть терминал(LAN)")
-        action_bindings = self.menu.addAction("Бинды")
-        action_pause = self.menu.addAction("Пауза")
-        action_stop = self.menu.addAction("Отменить работу")
-        #action_edit = self.menu.addAction("Редактировать")
-        action_delete = self.menu.addAction("Удалить")
+            self.menu = QMenu(self)
+            self.menu.setStyleSheet(stylesheets.DEFAULT_BORDER_STYLESHEET)
+            action_queue = self.menu.addAction("Открыть очередь")
+            action_force_start = self.menu.addAction("Запустить файл вне очереди")
+            action_restart_handler = self.menu.addAction("Перезапустить обработчик станка на слейве")
+            action_restart_connection = self.menu.addAction("Перезапустить соединение станка с обработчиком")
+            action_send_command = self.menu.addAction("Отправить команду")
+            action_open_terminal = self.menu.addAction("Открыть терминал(LAN)")
+            action_bindings = self.menu.addAction("Бинды")
+            action_pause = self.menu.addAction("Пауза")
+            action_stop = self.menu.addAction("Отменить работу")
+            #action_edit = self.menu.addAction("Редактировать")
+            action_delete = self.menu.addAction("Удалить")
 
-        action_force_start.triggered.connect(self.force_start)
-        action_restart_handler.triggered.connect(self.restart_handler)
-        action_restart_connection.triggered.connect(self.restart_connection)
-        action_open_terminal.triggered.connect(self.open_terminal)
-        action_send_command.triggered.connect(self.send_command)
-        action_bindings.triggered.connect(self.open_bindings_window)
-        action_delete.triggered.connect(self.delete_self)
-        action_stop.triggered.connect(self.stop_job)
-        action_pause.triggered.connect(self.pause_job)
+            action_force_start.triggered.connect(self.force_start)
+            action_restart_handler.triggered.connect(self.restart_handler)
+            action_restart_connection.triggered.connect(self.restart_connection)
+            action_open_terminal.triggered.connect(self.open_terminal)
+            action_send_command.triggered.connect(self.send_command)
+            action_bindings.triggered.connect(self.open_bindings_window)
+            action_delete.triggered.connect(self.delete_self)
+            action_stop.triggered.connect(self.stop_job)
+            action_pause.triggered.connect(self.pause_job)
 
-        action_queue.triggered.connect(self.open_queue)
+            action_queue.triggered.connect(self.open_queue)
 
         # action_ping.triggered.connect(self.ping_host)
         # action_info.triggered.connect(self.define)
@@ -184,21 +190,65 @@ class MachineFDMListEntry(QFrame):
             {"id": "ext0", "name": "Задать температуру сопла"}
         ]
 
-        self.temps = MachineInteractiveTemperature(temps, self.submit_temps, check_online=self.check_online_api)
-
         self.main_layout.addLayout(self.layout)
-        self.main_layout.addWidget(self.temps)
+
+        if self.enable_controls:
+            self.temps = MachineInteractiveTemperature(temps, self.submit_temps, check_online=self.check_online_api)
+            self.main_layout.addWidget(self.temps)
 
         self.setLayout(self.main_layout)
 
+        #drag
+        self.selected = False
+        self.dragStartPosition = self.pos()
+        self.drag_enable = drag_enable
+
         self.update_data()
+
+    def mouseMoveEvent(self, event):
+        if not self.drag_enable:
+            event.accept()
+            return
+        if not event.buttons() == Qt.LeftButton:
+            return
+        if ((event.pos() - self.dragStartPosition).manhattanLength()
+            < QApplication.startDragDistance()):
+            return
+        self.selected = True
+        self.check_selected()
+        drag = QDrag(self)
+        drag.setPixmap(env.templates_manager.icons["drag2"].pixmap(256,256))
+        mimeData = QMimeData()
+        mimeData.setText(str(self.machine["id"]))
+        drag.setMimeData(mimeData)
+        drag.setHotSpot(event.pos() - self.rect().topLeft())
+
+        dropAction = drag.exec_(Qt.CopyAction) 
+
+    def mousePressEvent(self, e):
+        if not self.drag_enable:
+            e.accept()
+            return
+        if e.buttons() == Qt.LeftButton:
+            if self.selected:
+                self.dragStartPosition = e.pos()
+            self.selected = not self.selected
+            self.check_selected()
+
+    def check_selected(self):
+        if not self.drag_enable:
+            return
+        if self.selected:
+            self.setStyleSheet(stylesheets.SELECTED_STYLESHEET)
+        else:
+            self.setStyleSheet(stylesheets.UNSELECTED_STYLESHEET)
 
     def open_bindings_window(self):
         self.dlg = FDMBindingsWindow(self.slave, self.machine)
         self.dlg.show()
 
     def open_queue(self):
-        self.queue_show = QueueWindow(self.slave, self.machine)
+        self.queue_show = QueueWindow(self.machine)
         self.queue_show.show()
 
     def pause_job(self):
@@ -380,7 +430,8 @@ class MachineFDMListEntry(QFrame):
         pass
 
     def contextMenuEvent(self, event):
-        self.menu.exec(event.globalPos())
+        if self.enable_controls:
+            self.menu.exec(event.globalPos())
 
     def change_ping_state(self, delay):
         self.ping_label.setText("Задержка: " + str(delay) + "мс.")

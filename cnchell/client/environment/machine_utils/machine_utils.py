@@ -72,3 +72,6 @@ class MachineUtils:
     def calculate_job_time_by_file(self, file):
         #TODO: make it for FDM
         return 0
+    
+    def calculate_job_time(self, job):
+        return 0

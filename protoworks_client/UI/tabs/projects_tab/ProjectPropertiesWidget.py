@@ -23,7 +23,7 @@ class ProjectPropertiesWidget(QWidget):
 
         self.setWindowTitle(f"Свойства проекта")
         self.setWindowIcon(templates_manager.icons["proto"])
-        self.setFixedSize(QSize(600, 600))
+        #self.setFixedSize(QSize(600, 600))
 
         self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
 

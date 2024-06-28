@@ -44,7 +44,7 @@ class MachinesListWindow(QWidget):
 
         self.setWindowTitle(f"Список станков")
         self.setWindowIcon(env.templates_manager.icons["cnchell"])
-        self.setFixedSize(QSize(700, 600))
+        #self.setFixedSize(QSize(700, 600))
 
 
         self.layout = QVBoxLayout()

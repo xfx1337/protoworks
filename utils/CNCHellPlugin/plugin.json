@@ -1,0 +1,8 @@
+{
+    "name": "CNCHell",
+    "author": "ProtoWorks",
+    "version": "0.1.0",
+    "description": "CNCHell",
+    "api": 8,
+    "i18n-catalog": "cura"
+}

@@ -18,6 +18,7 @@ import os
 import shutil
 
 import services.machines
+import services.hardware
 
 from FakeFlaskRequest import FakeFlaskRequest
 
@@ -43,16 +44,36 @@ class ActionManager:
                         return
                     
                     if jobs[0]["status"] == "В работе":
+                        if "job_part_id" in jobs[0]["unique_info"]:
+                            part = db.parts.get_part(jobs[0]["unique_info"]["job_project_id"], jobs[0]["unique_info"]["job_part_id"])
+                            part["count_done"] += 1
+                            part["status"] = PART_PRODUCTION
+                            db.parts.update_parts(part["project_id"], [part])
                         db.work_queue.delete_jobs([0], int(d.replace("MACHINE", "")))
                         jobs = db.work_queue.get_jobs(int(d.replace("MACHINE", "")))
 
                     if len(jobs) < 1:
                         return
                     
-                    job = jobs[0]
+                    while len(jobs) > 0:
+                        job = jobs[0]
+                        if "job_send_pre_calculated_filename" not in job["unique_info"]:
+                            job["status"] = "Ошибка. Отсутствует файл рассчёта для станка."
+                            db.work_queue.overwrite_job(job["id"], job)
+                            services.hardware.hub_beep(500, 1500)
+                            del jobs[0]
+                            continue
+                        if "job_pre_calculated_machine" in job["unique_info"] and job["unique_info"]["job_pre_calculated_machine"] != job["machine_id"]:
+                            job["status"] = "Ошибка. Отсутствует файл рассчёта для станка."
+                            db.work_queue.overwrite_job(job["id"], job)
+                            services.hardware.hub_beep(500, 1500)
+                            del jobs[0]
+                            continue
+                        else:
+                            break
 
                     path = os.path.join(config["path"]["machines_path"], "WorkingDirectory")
-                    shutil.copy(os.path.join(path, job["unique_info"]["job_send_filename"]), os.path.join(path, job["unique_info"]["job_filename"]))
+                    shutil.copy(os.path.join(path, job["unique_info"]["job_send_pre_calculated_filename"]), os.path.join(path, job["unique_info"]["job_pre_calculated_filename"]))
                     
                     send_path = os.path.join(path, job["unique_info"]["job_filename"])
 

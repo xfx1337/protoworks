@@ -444,4 +444,9 @@ class Files:
         func_check_update = lambda: env.net_manager.files.after_project_update(self.project["id"])
         return 0
 
-    
+    def get_server_path(self, path):
+        r = self.net_manager.request("/api/files/get_server_path", {"path": path})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED("Не удалось получить дерево файлов сервера", no_message=True)
+
+        return r.json()["path"]

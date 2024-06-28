@@ -34,6 +34,8 @@ import services.events
 
 from common import *
 
+from engineio.async_drivers import gevent
+
 sys.dont_write_bytecode = True # no pycache now
 
 app = Flask(__name__)
@@ -152,6 +154,10 @@ def get_zipped_path():
 def get_zipped_files():
     return services.files.get_zipped_files(request)
 
+@app.route('/api/files/get_server_path', methods = ['POST'])
+def get_server_path():
+    return services.files.get_server_path(request)
+
 @app.route('/api/audit/get_projects_sync_data', methods = ['POST'])
 def get_projects_sync_data():
     return services.audit.get_projects_sync_data(request)
@@ -236,6 +242,9 @@ def delete_parts():
 def indentify_parts():
     return services.parts.indentify_parts(request)
 
+@app.route('/api/parts/get_part_info', methods=['POST'])
+def get_part_info():
+    return services.parts.get_part_info(request)
 
 @app.route('/api/slaves/add', methods=['POST'])
 def add_slave():
@@ -346,6 +355,10 @@ def move_job():
 @app.route('/api/work_queue/overwrite_job', methods=['POST'])
 def overwrite_job():
     return services.work_queue.overwrite_job(request)
+
+@app.route('/api/work_queue/overwrite_job_files', methods=['POST'])
+def overwrite_job_files():
+    return services.work_queue.overwrite_job_files(request)
 
 @app.route('/api/bindings/add', methods=['POST'])
 def add_bind():

@@ -42,17 +42,18 @@ def add_jobs(request):
 
     bytes_left = obj["size"]
 
-    with open(os.path.join(config["path"]["temp_path"], obj["filename"]), 'wb') as upload:
-        chunk_size = int(config["networking"]["chunk_size"])
-        while bytes_left > 0:
-            chunk = request.files['file'].stream.read(chunk_size)
-            upload.write(chunk)
-            bytes_left -= len(chunk)
+    if obj["filename"] != "data_zip_bypass.zip":
+        with open(os.path.join(config["path"]["temp_path"], obj["filename"]), 'wb') as upload:
+            chunk_size = int(config["networking"]["chunk_size"])
+            while bytes_left > 0:
+                chunk = request.files['file'].stream.read(chunk_size)
+                upload.write(chunk)
+                bytes_left -= len(chunk)
 
-    machines_work_dir = os.path.join(config["path"]["machines_path"], "WorkingDirectory")
-    data_file = file_manager.unzip_data_archive(os.path.join(config["path"]["temp_path"], obj["filename"]), direct_folder=machines_work_dir)
+        machines_work_dir = os.path.join(config["path"]["machines_path"], "WorkingDirectory")
+        data_file = file_manager.unzip_data_archive(os.path.join(config["path"]["temp_path"], obj["filename"]), direct_folder=machines_work_dir)
 
-    utils.delete_file(os.path.join(config["path"]["temp_path"], obj["filename"]))
+        utils.delete_file(os.path.join(config["path"]["temp_path"], obj["filename"]))
 
     jobs = obj["jobs"]
     for job in jobs:
@@ -110,3 +111,31 @@ def overwrite_job(request):
     db.work_queue.overwrite_job(idx, json.loads(job))
 
     return "Изменено", 200
+
+def overwrite_job_files(request):
+    data = request.files['json']
+    obj = json.loads(unquote(data.read()))
+
+    ret = db.users.valid_token(obj["token"])
+    if not ret:
+        return "Токен не валиден", 403
+
+    bytes_left = obj["size"]
+
+    with open(os.path.join(config["path"]["temp_path"], obj["filename"]), 'wb') as upload:
+        chunk_size = int(config["networking"]["chunk_size"])
+        while bytes_left > 0:
+            chunk = request.files['file'].stream.read(chunk_size)
+            upload.write(chunk)
+            bytes_left -= len(chunk)
+
+    machines_work_dir = os.path.join(config["path"]["machines_path"], "WorkingDirectory")
+    data_file = file_manager.unzip_data_archive(os.path.join(config["path"]["temp_path"], obj["filename"]), direct_folder=machines_work_dir)
+
+    utils.delete_file(os.path.join(config["path"]["temp_path"], obj["filename"]))
+
+    job = obj["job"]
+    idx = obj["id"]
+    db.work_queue.overwrite_job(idx, json.loads(job))
+
+    return "Добавлены", 200

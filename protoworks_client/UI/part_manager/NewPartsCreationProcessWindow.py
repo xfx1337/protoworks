@@ -47,7 +47,7 @@ import threading
 class HiddenDonut(QWidget):
     def __init__(self):
         super().__init__()
-        self.setFixedSize(QSize(600, 700))
+        #self.setFixedSize(QSize(600, 700))
         self.hidden_terminal = QTerminalScreenOutput()
         self.hidden_layout = QVBoxLayout()
         self.hidden_layout.addWidget(self.hidden_terminal)
@@ -84,7 +84,7 @@ class NewPartsCreationProcessWindow(QWidget):
             self.setWindowTitle(f"[Процесс] Автоматическое обновление деталей")
 
         self.setWindowIcon(templates_manager.icons["proto"])
-        self.setFixedSize(QSize(1280, 720))
+        #self.setFixedSize(QSize(1280, 720))
 
         self.hLayout = QHBoxLayout()
         self.layout = QVBoxLayout()

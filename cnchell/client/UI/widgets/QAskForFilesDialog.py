@@ -19,7 +19,7 @@ class QAskForFilesDialog(QDialog):
 
         self.only_one_file = only_one_file
 
-        self.setWindowTitle("Загрузка файлов")
+        self.setWindowTitle("Выбор файлов")
         self.setWindowIcon(templates_manager.icons["cnchell"])
 
         self.layout = QVBoxLayout()

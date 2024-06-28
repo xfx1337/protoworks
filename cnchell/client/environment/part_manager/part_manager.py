@@ -84,7 +84,6 @@ class PartManager:
             if "file:///" in files[i]:
                 files[i] = files[i][8:]
             files[i] = files[i].replace("/", "\\")
-        
         relative_files = []
         not_parts = []
         for f in files:

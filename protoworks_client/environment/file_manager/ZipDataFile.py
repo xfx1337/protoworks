@@ -69,7 +69,9 @@ MACHINE_NAME: {self.author}
             real_path = f.relative(self.relative_path)
         elif self.relative_path == "":
             real_path = path.split("\\")[-1]
-        
+        else:
+            real_path = path.split("\\")[-1]
+            
         ret = f.to_dict()
         ret["path"] = real_path
         arch_filename = utils.get_unique_id()

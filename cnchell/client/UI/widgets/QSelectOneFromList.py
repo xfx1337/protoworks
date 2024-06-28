@@ -30,7 +30,7 @@ class QSelectOneFromList(QWidget):
 
         self.setWindowTitle("Выбор")
         self.setWindowIcon(env.templates_manager.icons["cnchell"])
-        self.setFixedSize(QSize(400, 600))
+        #self.setFixedSize(QSize(400, 600))
 
         self.label = QLabel(text)
 

@@ -78,7 +78,7 @@ class ProjectSyncDialog(QDialog):
         self.layout.addLayout(self.btn_box_layout)
 
         self.setLayout(self.layout)
-        self.setFixedSize(self.sizeHint())
+        #self.setFixedSize(self.sizeHint())
 
     def checkbox_enabled(self):
         if not self.checkboxes_disabled:

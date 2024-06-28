@@ -1,0 +1,8 @@
+# username password privileges
+# users will be registered at next server startup
+# or you can ask it by entering "update user_list" in console while logged in admin account
+
+admin Flvbybcnhfnjh admin
+Akvarium Flvbybcnhfnjh user
+Freza Flvbybcnhfnjh user
+Server Flvbybcnhfnjh user

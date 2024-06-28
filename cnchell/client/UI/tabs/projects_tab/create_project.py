@@ -23,7 +23,7 @@ class CreateProjectWidget(QWidget):
 
         self.setWindowTitle(f"Создание проекта")
         self.setWindowIcon(env.templates_manager.icons["cnchell"])
-        self.setFixedSize(QSize(800, 500))
+        #self.setFixedSize(QSize(800, 500))
 
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.setWindowFlag(Qt.WindowStaysOnTopHint, True)

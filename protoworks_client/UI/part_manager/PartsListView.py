@@ -199,7 +199,7 @@ class PartsListView(QWidget):
 
         self.setWindowTitle(f"Список деталей")
         self.setWindowIcon(env.templates_manager.icons["proto"])
-        self.setFixedSize(QSize(1280, 720))
+        #self.setFixedSize(QSize(1280, 720))
 
         self.main_layout = QHBoxLayout()
 
@@ -295,7 +295,7 @@ class PartsListView(QWidget):
         self.files_drop = QFilesDrop("Переместите сюда файлы детали проекта для их добавления", callback=self.on_file_drop)
         #self.files_drop.setFixedHeight()
 
-        self.open_cnchell_btn = QInitButton("Перейти в CNCHell")
+        self.open_cnchell_btn = QInitButton("Перейти в CNCHell", callback=self.open_cnchell_btn)
         self.open_convert_window = QInitButton("Перейти в окно конвертации", callback=self.open_convert_window)
         self.clear_selection_btn = QInitButton("Очистить выбор", callback=self.clear_right_selection)
         self.change_status_btn = QInitButton("Изменить состояние", callback=self.change_status)
@@ -316,6 +316,41 @@ class PartsListView(QWidget):
         self.restrictions = []
 
         self.update_data(update_network=True)
+
+    def open_cnchell_btn(self):
+        ids = self.selected_ids
+        parts = env.net_manager.parts.get_parts(self.project["id"])
+        parts_to_send = []
+        for p in parts:
+            if p["id"] in ids:
+                parts_to_send.append(p)
+
+        files_send = []
+        jobs = []
+
+        for f in parts_to_send:
+            if f == None:
+                continue
+            path = utils.remove_path(self.project["server_path"], f["path"])
+            path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"], path)
+
+            un_filename = utils.get_unique_id()
+            #files_send.append({un_filename: f["path"].split("\\")[-1]})
+            files_send.append({un_filename: path})
+            job_pre_calculated = False
+            m_id = -1
+            unique_info = {"job_name": "Производство детали", "job_filename": path.split("\\")[-1], "job_send_filename": un_filename,
+            "job_part_id": f["id"],
+            "job_part_name": f["name"], 
+            "job_project_id": f["project_id"],
+            "job_pre_calculated": job_pre_calculated,
+            "job_pre_calculated_machine": m_id}
+            job = {"machine_id": -1, "work_time": 0, "work_start": -1, "status": "Ожидание", "unique_info": unique_info}
+            jobs.append(job)
+
+        env.net_manager.work_queue.add_jobs(jobs, files_send)
+        self.clear_right_selection()
+        utils.message("Откройте CNCHell. Детали находятся в нераспределенной очереди(Менеджер Очередей)", tittle="Оповещение")
 
     def open_resolve_deletion_dialog(self):
         parts = env.net_manager.parts.get_parts(self.project["id"])

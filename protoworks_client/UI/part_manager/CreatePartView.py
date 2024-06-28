@@ -25,7 +25,7 @@ class CreatePartView(QWidget):
 
         self.setWindowTitle(f"Создание детали")
         self.setWindowIcon(env.templates_manager.icons["proto"])
-        self.setFixedSize(QSize(800, 500))
+        #self.setFixedSize(QSize(800, 500))
 
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.setWindowFlag(Qt.WindowStaysOnTopHint, True)

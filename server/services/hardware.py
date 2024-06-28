@@ -248,6 +248,9 @@ def send_hub_command(link, data={}, method='POST'):
                 requests.get(hub["ip"] + link)
         except: pass
 
+def hub_beep(freq, time):
+    send_hub_command("/api/tone", data={"freq": freq, "time": time})
+
 def hub_setup_all_machines():
     machines = db.machines.get_machines_list(-1)
     slaves = {}

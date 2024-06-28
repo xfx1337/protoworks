@@ -48,7 +48,7 @@ class ResolvePartDeletionWindow(QWidget):
 
         self.setWindowTitle(f"Разрешение ситуации удаления детали")
         self.setWindowIcon(env.templates_manager.icons["proto"])
-        self.setFixedSize(QSize(1000, 600))
+        #self.setFixedSize(QSize(1000, 600))
 
         name = self.project["name"]
         self.project_label = QLabel(f"Проект: {name}")

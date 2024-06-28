@@ -108,6 +108,6 @@ class Machines:
         return r.json()["host"]
 
     def delete(self, machine_id):
-        r = self.net_manager.request("/api/machines/delete", {"id": machine_id})
+        r = self.net_manager.request("/api/machines/delete", {"machine_id": machine_id})
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)

@@ -16,6 +16,8 @@ from UI.widgets.QSystemBar import QSystemBar
 
 from UI.paper_print.PaperPrintMenu import PaperPrintMenu
 
+from UI.help_window import HelpWindow
+
 import utils
 
 import pythoncom, win32com
@@ -70,7 +72,7 @@ class MainWindow(QMainWindow):
         )
 
         app_bar_layout_right.addWidget(
-            QInitButton("ПОМОГИТЕ", callback=lambda: self.open_tab(None))
+            QInitButton("ПОМОГИТЕ", callback=lambda: self.open_tab("help"))
         )
 
         # building app bar
@@ -136,6 +138,11 @@ class MainWindow(QMainWindow):
 
     def open_tab(self, alias):
         if alias == None:
+            return
+
+        if alias == "help":
+            self.help_wnd = HelpWindow()
+            self.help_wnd.show()
             return
 
         self.tab = tabs_aliases.get_tab_by_alias(alias)() # self because garbage collector deletes it...

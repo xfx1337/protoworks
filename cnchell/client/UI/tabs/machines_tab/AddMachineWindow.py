@@ -39,7 +39,7 @@ class AddMachineWindow(QWidget):
 
         self.setWindowTitle(f"Добавление станка")
         self.setWindowIcon(env.templates_manager.icons["cnchell"])
-        self.setFixedSize(QSize(750, 750))
+        #self.setFixedSize(QSize(750, 750))
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)

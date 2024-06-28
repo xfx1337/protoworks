@@ -167,4 +167,9 @@ SLAVES_TYPES_TRANSLATIONS_BACKWARDS = {
     "MILL": 4
 }
 
+MACHINES_FILE_TYPES = [
+    "gcode", "gco", "pm3", "pwma"
+]
+
 FDM_API_KEY_DEFAULT = "Flvbybcnhfnjh"
+

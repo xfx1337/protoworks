@@ -9,6 +9,7 @@ from environment.network_manager.audit import Audit
 from environment.network_manager.parts import Parts
 from environment.network_manager.materials import Materials
 from environment.network_manager.hardware import Hardware
+from environment.network_manager.work_queue import WorkQueue
 
 import exceptions
 
@@ -29,6 +30,7 @@ class NetworkManager:
         self.parts = Parts(self)
         self.materials = Materials(self)
         self.hardware = Hardware(self)
+        self.work_queue = WorkQueue(self)
 
         self._auto_login = False
 

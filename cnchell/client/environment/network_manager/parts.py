@@ -54,6 +54,13 @@ class Parts:
         
         return json.loads(r.text)["parts"]
 
+    def get_part_info(self, part_id, project_id):
+        r = self.net_manager.request("/api/parts/get_part_info", {"part_id": part_id, "project_id": project_id})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)
+        
+        return json.loads(r.text)["part"]
+
     # def confirm_parts(self, project_id, ids):
     #     r = self.net_manager.request("/api/parts/confirm_parts", {"project_id": project_id, "parts_ids": ids})
     #     if r.status_code != 200:

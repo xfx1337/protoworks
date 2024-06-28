@@ -73,6 +73,8 @@ class WorkQueue:
 
     def delete_jobs(self, indexes, machine_id):
         connection, cursor = self.db.get_conn_cursor()
+        if type(indexes[0]) == list:
+            indexes = indexes[0] # fuck
         for idx in indexes:
             cursor.execute("DELETE FROM work_queue WHERE index = %s AND machine_id = %s", [idx, machine_id])
         indexes = sorted(indexes, reverse=True)

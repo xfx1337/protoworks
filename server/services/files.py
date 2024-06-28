@@ -301,3 +301,13 @@ def get_zipped_files(request):
         utils.delete_file(path)
 
     return response
+
+def get_server_path(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+
+    path = data["path"]
+
+    return json.dumps({"path": config["path"][path]}), 200

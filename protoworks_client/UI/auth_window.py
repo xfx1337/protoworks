@@ -18,7 +18,7 @@ class AuthWindow(QWidget):
 
         self.setWindowTitle(f"Аутентификация")
         self.setWindowIcon(env.templates_manager.icons["proto"])
-        self.setFixedSize(QSize(320, 200))
+        #self.setFixedSize(QSize(320, 200))
 
         self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
 

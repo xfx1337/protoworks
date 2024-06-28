@@ -21,7 +21,7 @@ class PaperPrintMenu(QWidget):
 
         self.setWindowTitle(f"Печать на бумажном принтере сервера")
         self.setWindowIcon(templates_manager.icons["proto"])
-        self.setFixedSize(QSize(800, 300))
+        #self.setFixedSize(QSize(800, 300))
 
 
         self.layout = QVBoxLayout()

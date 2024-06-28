@@ -171,7 +171,7 @@ class ProjectView(QWidget):
 
         self.setWindowTitle("Просмотр проекта: " + self.project["name"])
         self.setWindowIcon(env.templates_manager.icons["cnchell"])
-        self.setFixedSize(QSize(800, 500))
+        #self.setFixedSize(QSize(800, 500))
 
         #self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
 

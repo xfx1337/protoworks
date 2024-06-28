@@ -123,3 +123,15 @@ def indentify_parts(request):
                 parts.append(part)
     
     return json.dumps({"parts": parts}), 200
+
+def get_part_info(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+
+    part_id = data["part_id"]
+    project_id = data["project_id"]
+
+    part = db.parts.get_part(project_id, part_id)
+    return json.dumps({"part": part}), 200

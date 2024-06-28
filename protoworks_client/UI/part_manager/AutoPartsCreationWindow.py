@@ -62,7 +62,7 @@ class AutoPartsCreationWindow(QWidget):
 
         self.setWindowTitle(f"Автоматическое создание деталей")
         self.setWindowIcon(templates_manager.icons["proto"])
-        self.setFixedSize(QSize(800, 800))
+        #self.setFixedSize(QSize(800, 800))
 
         self.description = QLabel("В данном разделе можно автоматически создавать Детали-ProtoWorks для их дальнейшей печати, конвертации в другие форматы и тд. ProtoWorks работает только с деталями, которые зарегистрованны здесь.")
         self.description.setWordWrap(True)

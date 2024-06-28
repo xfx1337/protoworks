@@ -43,7 +43,7 @@ class MainConvertWindow(QWidget):
 
         self.setWindowTitle(f"Конвертирование деталей")
         self.setWindowIcon(env.templates_manager.icons["proto"])
-        self.setFixedSize(QSize(1000, 600))
+        #self.setFixedSize(QSize(1000, 600))
 
         name = self.project["name"]
         self.project_label = QLabel(f"Проект: {name}")

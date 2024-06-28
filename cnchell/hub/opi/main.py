@@ -48,6 +48,12 @@ def server_request():
     print(data["conf"])
     return "setting", 200
 
+@app.route("/api/tone", methods=['POST'])
+def tone():
+    data = request.get_json()
+    watchdog.arduino_serial_connection.send("tone " + str(data["freq"]) + " " + str(data["time"]))
+    return "sent", 200
+
 @app.route("/api/machines/setup_all", methods=['POST'])
 def setup_all():
     data = request.get_json()["data"]

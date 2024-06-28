@@ -16,6 +16,9 @@ from UI.widgets.QSystemBar import QSystemBar
 
 import utils
 
+from UI.additional_windows.QueueManagerWindow import QueueManagerWindow
+
+from UI.help_window import HelpWindow
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -46,7 +49,7 @@ class MainWindow(QMainWindow):
         )
 
         app_bar_layout_left.addWidget(
-            QInitButton("Очередь", callback=lambda: self.open_tab("order"))
+            QInitButton("Менеджер Очередей", callback=lambda: self.open_window("queue_man"))
         )
 
         app_bar_layout_left.addWidget(
@@ -109,6 +112,11 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(main_container)   
 
+    def open_window(self, window):
+        if window == "queue_man":
+            self.queue_man_wnd = QueueManagerWindow()
+            self.queue_man_wnd.show()
+
     def on_operation_change(self):
         tasks = env.task_manager.get_tasks()
         tasks_sorted = sorted(tasks, key=lambda key: (tasks[key].time_started, -tasks[key].status))
@@ -125,6 +133,11 @@ class MainWindow(QMainWindow):
 
     def open_tab(self, alias):
         if alias == None:
+            return
+
+        if alias == "help":
+            self.help_wnd = HelpWindow()
+            self.help_wnd.show()
             return
 
         self.tab = tabs_aliases.get_tab_by_alias(alias)() # self because garbage collector deletes it...
