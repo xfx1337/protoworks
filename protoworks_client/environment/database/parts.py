@@ -11,8 +11,8 @@ class Parts:
         CREATE TABLE IF NOT EXISTS parts (
             id serial PRIMARY KEY,
             project_id INT,
-            name VARCHAR(255),
-            origin_path VARCHAR(255),
+            name TEXT,
+            origin_path TEXT,
             count_need INT,
             count_done INT,
             status INT

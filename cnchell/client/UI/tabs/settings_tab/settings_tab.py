@@ -18,6 +18,8 @@ from UI.widgets.QInitButton import QInitButton
 from UI.widgets.QPathInput import QPathInput
 from UI.widgets.QUserInput import QUserInput
 
+from UI.tabs.settings_tab.MachinesConnectionTableWindow import MachinesConnectionTableWindow
+
 import defines
 
 
@@ -72,7 +74,9 @@ class SettingsWidget(QWidget, Tab):
     def load_settings(self):
         self.path_list = [
             ["Путь хранения проектов:", "projects_path"],
-            ["Путь временных файлов:", "temp_path"]
+            ["Путь временных файлов:", "temp_path"],
+            ["Путь рассчёта файлов:", "calculation_path"],
+            ["Путь установки OrcaSlicer", "orca_path"]
         ]
 
         self.pathes_label = QLabel("Пути")
@@ -99,8 +103,27 @@ class SettingsWidget(QWidget, Tab):
         # self.scrollWidgetLayout.setAlignment(self.networking_label, Qt.AlignmentFlag.AlignTop)
         # j+=1
 
+        self.machines_label = QLabel("Конфигурация подключений станков на клиенте")
+        self.scrollWidgetLayout.insertWidget(j, self.machines_label)
+        self.scrollWidgetLayout.setAlignment(self.machines_label, Qt.AlignmentFlag.AlignTop)
+        j += 1
+        self.machines_notes_label = QLabel("В CNCHell есть возможность автоматизированного слайсинга и добавления в очередь станка. Для этого, в окне расчёта детали в очереди станка Вы можете выбрать одну из программ слайсеров, поддерживающих удалённую печать(например OrcaSlicer). В программе у станка указывается его подключение(хост, порт и тд). В таблице ниже можно получить эти данные. Подобнее читайте в руководстве пользователя.")
+        self.machines_notes_label.setWordWrap(True)
+        self.scrollWidgetLayout.insertWidget(j, self.machines_notes_label)
+        self.scrollWidgetLayout.setAlignment(self.machines_notes_label, Qt.AlignmentFlag.AlignTop)
+        j += 1
+        
+        self.configure_machines_btn = QInitButton("Открыть таблицу подключений станков", callback=self.open_machines_connection_table)
+        self.scrollWidgetLayout.insertWidget(j, self.configure_machines_btn)
+        self.scrollWidgetLayout.setAlignment(self.configure_machines_btn, Qt.AlignmentFlag.AlignTop)
+        j += 1
+
         self.apply_btn = QInitButton("Применить", callback=self.apply)
         self.layout.addWidget(self.apply_btn)
+
+    def open_machines_connection_table(self):
+        self.machines_connection_table = MachinesConnectionTableWindow()
+        self.machines_connection_table.show()
 
     def apply(self):
         for i in range(len(self.path_inputs)):

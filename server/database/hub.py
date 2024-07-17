@@ -24,13 +24,13 @@ class Hub:
         connection, cursor = self.db.get_conn_cursor()
         cursor.execute("SELECT * FROM hub")
         c = cursor.fetchone()
+        self.db.close(connection)
         if c == None:
             return {}
 
         hostname = c[1]
         ip = c[2]
         d = {"hostname": c[1], "ip": c[2]}
-        self.db.close(connection)
         return d
         
     

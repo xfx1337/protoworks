@@ -328,13 +328,19 @@ class PartsListView(QWidget):
             #files_send.append({un_filename: f["path"].split("\\")[-1]})
             files_send.append({un_filename: path})
             job_pre_calculated = False
+            count_need = f["count_need"]
+            count_done = f["count_done"]
+            if count_need == 0:
+                count_need = 1
             m_id = -1
             unique_info = {"job_name": "Производство детали", "job_filename": path.split("\\")[-1], "job_send_filename": un_filename,
             "job_part_id": f["id"],
             "job_part_name": f["name"], 
             "job_project_id": f["project_id"],
             "job_pre_calculated": job_pre_calculated,
-            "job_pre_calculated_machine": m_id}
+            "job_pre_calculated_machine": m_id,
+            "job_count_need": count_need,
+            "job_count_done": count_done}
             job = {"machine_id": -1, "work_time": 0, "work_start": -1, "status": "Ожидание", "unique_info": unique_info}
             jobs.append(job)
 

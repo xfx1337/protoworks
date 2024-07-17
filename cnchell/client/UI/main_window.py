@@ -16,14 +16,22 @@ from UI.widgets.QSystemBar import QSystemBar
 
 import utils
 
+import os
+
 from UI.additional_windows.QueueManagerWindow import QueueManagerWindow
 
 from UI.help_window import HelpWindow
+
+from UI.additional_windows.CalculationsJobsFinderWindow import CalculationsJobsFinderWindow
+
+from UI.widgets.QYesOrNoDialog import QYesOrNoDialog
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         env.templates_manager.load_templates() # before i cant init fucking pixmap before app starts..
+        env.task_manager.run_system_task(env.calculations.calculation_check_thread, "[СИСТЕМА] Система расчётов")
+        env.task_manager.run_system_task(env.server_executor.setup_servers, "[СИСТЕМА] Запуск серверов")
         env.main_window = self
         self.get_tab_by_alias = tabs_aliases.get_tab_by_alias
         self.tabs_aliases = tabs_aliases.TABS_ALIASES
@@ -103,6 +111,7 @@ class MainWindow(QMainWindow):
 
         env.main_signals.task_status_changed.connect(self.on_operation_change)
         env.main_signals.message.connect(utils.message)
+        env.main_signals.open_calculations_jobs_finder_window.connect(self._open_calculations_jobs_finder_window)
 
         main_vertical_layout.addWidget(self.botom_bar, 1)
         main_vertical_layout.setAlignment(self.botom_bar, Qt.AlignmentFlag.AlignBottom)
@@ -144,3 +153,19 @@ class MainWindow(QMainWindow):
 
         id = env.tab_manager.open_tab(self.tab)
         self.body_splitter.addWidget(self.tab)
+
+    
+    def _open_calculations_jobs_finder_window(self, dc):
+        self.calculations_jobs_finder_wnd = CalculationsJobsFinderWindow(dc)
+        self.calculations_jobs_finder_wnd.show()
+
+    def closeEvent(self, event):
+        self.dlg = QYesOrNoDialog("Вы действительно хотите закрыть приложение?")
+        self.dlg.exec()
+        if not self.dlg.answer:
+            event.ignore()
+            return
+        event.accept()
+        env.server_executor.kill_all()
+        os._exit(0)
+        exit()

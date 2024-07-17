@@ -340,12 +340,16 @@ class PartsListView(QWidget):
             job_pre_calculated = False
             m_id = -1
             unique_info = {"job_name": "Производство детали", "job_filename": path.split("\\")[-1], "job_send_filename": un_filename,
-            "job_part_id": f["id"],
+           "job_part_id": f["id"],
             "job_part_name": f["name"], 
             "job_project_id": f["project_id"],
             "job_pre_calculated": job_pre_calculated,
-            "job_pre_calculated_machine": m_id}
+            "job_pre_calculated_machine": m_id,
+            "job_count_need": f["count_need"],
+            "job_count_done": f["count_done"]}
             job = {"machine_id": -1, "work_time": 0, "work_start": -1, "status": "Ожидание", "unique_info": unique_info}
+            if job["unique_info"]["job_count_need"] == 0:
+                job["unique_info"]["job_count_need"] = 1
             jobs.append(job)
 
         env.net_manager.work_queue.add_jobs(jobs, files_send)

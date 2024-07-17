@@ -101,10 +101,28 @@ class SlaveListEntry(QFrame):
         wnd.show()
 
     def get_machines_list(self):
-        pass
+        machines = env.net_manager.machines.get_machines_list(self.slave["id"])["machines"]
+        names = []
+        for m in machines:
+            idx = m["id"]
+            name = m["name"]
+            names.append(f"[{idx}] {name}")
+        names = "\n".join(names)
+        s_id = self.slave["id"]
+        utils.message((f"Станки слейва {s_id}: \n " + names), tittle="Уведомление")
 
     def delete_slave(self):
-        pass
+        machines = env.net_manager.machines.get_machines_list(self.slave["id"])["machines"]
+        if len(machines) > 0:
+            utils.message("Удалите все станки слейва. Удаление слейва на данный момент невозможно.")
+            return
+        env.net_manager.slaves.delete_slave(self.slave["id"])
+        self.dlg = QYesOrNoDialog("Вы действительно хотите удалить слейв?")
+        self.dlg.exec()
+        if not self.dlg.answer:
+            return
+        self.hide()
+        del self
 
     def contextMenuEvent(self, event):
         self.menu.exec(event.globalPos())

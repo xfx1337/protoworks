@@ -108,6 +108,8 @@ def get_machine(request):
 
     idx = data["id"]
     machine = db.machines.get_machine(int(idx))
+    if machine == None:
+        return "Not found", 404
     machine["status"] = "N/A"
     machine["work_status"] = "N/A"
     machine["info"] = {}
@@ -240,6 +242,11 @@ def cancel_job(request):
     else:
         pause = False
 
+    jobs = db.work_queue.get_jobs(int(idx))
+    if jobs[0]["status"] == "В работе":
+        jobs[0]["status"] = "Отменена"
+        db.work_queue.overwrite_job(jobs[0]["id"], jobs[0])
+
     machine = db.machines.get_machine(int(idx))
     slave = db.slaves.get_slave(machine["slave_id"])
     r = requests.post(slave["ip"] + "/api/machines/cancel_job", json = {"unique_info":json.loads(machine["unique_info"].replace("'", '"')), "id": machine["id"], "pause": pause})
@@ -304,3 +311,5 @@ def delete(request):
         return "Токен не валиден", 403
 
     idx = data["machine_id"]
+    db.machines.delete(idx)
+    return "Успешно", 200

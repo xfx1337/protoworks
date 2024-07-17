@@ -120,3 +120,17 @@ class WorkQueue:
 
         self.env.file_manager.delete_file(src_path)
         return r.text
+    
+    def find_jobs_by_parts(self, jobs_to_search, ignore_machine_equal=False):
+        r = self.net_manager.request("/api/work_queue/find_jobs_by_parts", {"parts": jobs_to_search, "ignore_machine_equal": ignore_machine_equal})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)
+        
+        return json.loads(r.text)["jobs_equals"]
+    
+    def find_jobs_by_files(self, jobs_to_search, ignore_machine_equal=False):
+        r = self.net_manager.request("/api/work_queue/find_jobs_by_files", {"files": jobs_to_search, "ignore_machine_equal": ignore_machine_equal})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)
+        
+        return json.loads(r.text)["jobs_equals"]

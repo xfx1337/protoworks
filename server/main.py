@@ -10,6 +10,7 @@ from flask_cors import CORS
 
 import threading
 import time
+import datetime
 
 from exceptions import *
 import utils
@@ -31,6 +32,7 @@ import services.work_queue
 import services.bindings
 import services.actions
 import services.events
+import services.configs
 
 from common import *
 
@@ -58,6 +60,23 @@ except DatabaseInitFailed as e:
 # registering users
 print("[main] checking userlist")
 utils.check_userlist()
+
+def backup_watchdog():
+    x = time.gmtime()
+    ep = datetime.datetime(x.tm_year,x.tm_mon,x.tm_mday,0,0,0).timestamp()+cfg["backup"]["first"]
+    if time.time() > ep:
+        ep += cfg["backup"]["delay"]
+    
+    while True:
+        time.sleep(5)
+        if time.time() >= ep:
+            ep += cfg["backup"]["delay"]
+            utils.backup(cfg["path"]["projects_path"], cfg["backup"]["backup_path"])
+
+if cfg["backup"]["enabled"]:
+    print("[backup] running checking thread")
+    backup_thread = threading.Thread(target=backup_watchdog)
+    #backup_thread.start()
 
 print(f"[main] running flask server")
 print("")
@@ -269,6 +288,9 @@ def send_slave_request():
 @app.route('/api/slaves/get', methods=['POST'])
 def get_slave():
     return services.slaves.get_slave(request)
+@app.route('/api/slaves/delete', methods=['POST'])
+def delete_slave():
+    return services.slaves.delete_slave(request)
 
 
 @app.route('/api/machines/check_online', methods=['POST'])
@@ -360,6 +382,14 @@ def overwrite_job():
 def overwrite_job_files():
     return services.work_queue.overwrite_job_files(request)
 
+@app.route('/api/work_queue/find_jobs_by_parts', methods=['POST'])
+def find_jobs_by_parts():
+    return services.work_queue.find_jobs_by_parts(request)
+
+@app.route('/api/work_queue/find_jobs_by_files', methods=['POST'])
+def find_jobs_by_files():
+    return services.work_queue.find_jobs_by_files(request)
+
 @app.route('/api/bindings/add', methods=['POST'])
 def add_bind():
     return services.bindings.add(request)
@@ -375,6 +405,24 @@ def get_event_by_action():
 @app.route("/api/actions/execute", methods=['POST'])
 def execute_event():
     return services.actions.execute(request)
+
+
+@app.route('/api/configs/get_sync', methods=['POST'])
+def get_configs_sync():
+    return services.configs.get_sync(request)
+
+@app.route('/api/configs/upload_zip', methods=['POST'])
+def upload_config_zip():
+    return services.configs.upload_zip(request)
+
+@app.route('/api/configs/get_zip', methods=['POST'])
+def get_config_zip():
+    return services.configs.get_zip(request)
+
+@app.route('/api/configs/delete', methods=['POST'])
+def delete_config():
+    return services.configs.delete(request)
+
 
 @socketio.on("send_monitoring_update")
 def check_online(message):

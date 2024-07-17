@@ -28,6 +28,12 @@ class Slaves:
 
         return r.text
     
+    def delete_slave(self, idx):
+        r = self.net_manager.request("/api/slaves/delete", {"id": idx})
+        if r.status_code != 200:
+            raise exceptions.REQUEST_FAILED(r.text)
+        return r.text
+
     def get_slaves_list(self, type_s=-1):
         r = self.net_manager.request("/api/slaves/list", {"type": type_s})
         if r.status_code != 200:

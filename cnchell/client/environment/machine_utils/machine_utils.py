@@ -6,6 +6,8 @@ import os
 
 from defines import *
 
+import utils
+
 @singleton
 class MachineUtils:
     def __init__(self, env=None):
@@ -70,8 +72,41 @@ class MachineUtils:
         return commands
 
     def calculate_job_time_by_file(self, file):
-        #TODO: make it for FDM
+        if file.split(".")[-1] in ["gcode", "gco"]:
+            with open(file, "r", encoding="utf-8") as f:
+                content = f.readlines()
+            for l in content:
+                if ";TIME:" in l:
+                    return int(l.split(";TIME:")[-1])
+                if "; estimated printing time (normal mode) = " in l:
+                    t = l.split("; estimated printing time (normal mode) = ")[-1]
+                    secs = 0
+                    for s in t.split(" "):
+                        secs += utils.get_seconds(s)
+                    return secs
+
         return 0
     
     def calculate_job_time(self, job):
+        return job["work_time"]*(job["unique_info"]["job_count_need"]-job["unique_info"]["job_count_done"])
         return 0
+
+    def get_machine_id_from_filename(self, f):
+        o = ""
+        x = f.split("_PWM")[-1]
+        for l in x:
+            if l.isdigit():
+                o += l
+            else:
+                break
+        return int(o)
+
+    def get_part_id_from_filename(self, f):
+        o = ""
+        x = f.split("_PW")[1]
+        for l in x:
+            if l.isdigit():
+                o += l
+            else:
+                break
+        return int(o)

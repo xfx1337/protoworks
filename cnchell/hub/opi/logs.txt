@@ -1,0 +1,8 @@
+2024-07-05 20:48:29,564 [MainThread  ] [INFO ]  hub server v0.1
+2024-07-05 20:48:29,585 [MainThread  ] [WARNI]   * Running on all addresses.
+   WARNING: This is a development server. Do not use it in a production deployment.
+2024-07-05 20:48:29,585 [MainThread  ] [INFO ]   * Running on http://192.168.8.88:5001/ (Press CTRL+C to quit)
+2024-07-05 20:48:29,870 [Thread-3 (pr] [INFO ]  127.0.0.1 - - [05/Jul/2024 20:48:29] "POST /api/server_ip_update HTTP/1.1" 200 -
+2024-07-05 20:48:29,971 [Thread-4 (pr] [INFO ]  127.0.0.1 - - [05/Jul/2024 20:48:29] "POST /api/server_ip_update HTTP/1.1" 200 -
+2024-07-05 20:48:32,582 [Thread-5 (pr] [INFO ]  {'slaves': [{'ip': 'http://192.168.0.188:3719', 'id': 2}], 'machines': []}
+2024-07-05 20:48:32,582 [Thread-5 (pr] [INFO ]  127.0.0.1 - - [05/Jul/2024 20:48:32] "POST /api/set_monitoring_configuration HTTP/1.1" 200 -

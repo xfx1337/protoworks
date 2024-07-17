@@ -54,8 +54,7 @@ class TaskManager(QThreadPool):
         self.env.main_signals.task_status_changed.emit()
         
         return task
-
-
+        
     def get_tasks(self):
         return self.tasks
     

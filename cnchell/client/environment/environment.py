@@ -10,6 +10,8 @@ from environment.file_manager.file_manager import FileManager
 from environment.database.db import Database
 from environment.part_manager.part_manager import PartManager
 from environment.machine_utils.machine_utils import MachineUtils
+from environment.calculations.calculations import Calculations
+from environment.server_executor.server_executor import ServerExecutor
 
 import utils
 
@@ -32,6 +34,10 @@ class Environment():
 
         self.part_manager = PartManager(self)
         self.machine_utils = MachineUtils(self)
+
+        self.calculations = Calculations(self)
+
+        self.server_executor = ServerExecutor(self)
 
         self.main_signals = None
         self.main_window = None

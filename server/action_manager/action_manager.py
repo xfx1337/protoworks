@@ -35,10 +35,18 @@ class ActionManager:
         
         if action["action"] == "NEXT_JOB":
             for d in action["devices"]:
+                idx = int(d.replace("MACHINE", ""))
+                try: db.machines.get_machine(idx)
+                except: continue
+                jobs = db.work_queue.get_jobs(int(d.replace("MACHINE", "")))
+                # if len(jobs) > 0:
+                #     if jobs[0]["status"] == "В работе":
+                #         services.hardware.hub_beep(300, 5000)
+                #         return
+
                 services.machines.cancel_job(FakeFlaskRequest({"machine_id": int(d.replace("MACHINE", "")), "token": db.users.get_token("BYPASS")}))
                 #db.work_queue.delete_jobs([0], int(d.replace("MACHINE", "")))
                 try:
-                    jobs = db.work_queue.get_jobs(int(d.replace("MACHINE", "")))
 
                     if len(jobs) < 1:
                         return
@@ -48,9 +56,13 @@ class ActionManager:
                             part = db.parts.get_part(jobs[0]["unique_info"]["job_project_id"], jobs[0]["unique_info"]["job_part_id"])
                             part["count_done"] += 1
                             part["status"] = PART_PRODUCTION
-                            db.parts.update_parts(part["project_id"], [part])
-                        db.work_queue.delete_jobs([0], int(d.replace("MACHINE", "")))
-                        jobs = db.work_queue.get_jobs(int(d.replace("MACHINE", "")))
+                            if part["count_done"] == part["count_neeed"]:
+                                part["status"] = PART_DONE
+                            db.parts.register_update(part["project_id"], [part])
+                        jobs[0]["unique_info"]["job_count_done"] += 1
+                        if jobs[0]["unique_info"]["job_count_need"] == jobs[0]["unique_info"]["job_count_done"]:
+                            db.work_queue.delete_jobs([0], int(d.replace("MACHINE", "")))
+                            jobs = db.work_queue.get_jobs(int(d.replace("MACHINE", "")))
 
                     if len(jobs) < 1:
                         return
@@ -60,13 +72,13 @@ class ActionManager:
                         if "job_send_pre_calculated_filename" not in job["unique_info"]:
                             job["status"] = "Ошибка. Отсутствует файл рассчёта для станка."
                             db.work_queue.overwrite_job(job["id"], job)
-                            services.hardware.hub_beep(500, 1500)
+                            services.hardware.hub_beep(500, 1000)
                             del jobs[0]
                             continue
                         if "job_pre_calculated_machine" in job["unique_info"] and job["unique_info"]["job_pre_calculated_machine"] != job["machine_id"]:
                             job["status"] = "Ошибка. Отсутствует файл рассчёта для станка."
                             db.work_queue.overwrite_job(job["id"], job)
-                            services.hardware.hub_beep(500, 1500)
+                            services.hardware.hub_beep(500, 1000)
                             del jobs[0]
                             continue
                         else:
@@ -75,7 +87,7 @@ class ActionManager:
                     path = os.path.join(config["path"]["machines_path"], "WorkingDirectory")
                     shutil.copy(os.path.join(path, job["unique_info"]["job_send_pre_calculated_filename"]), os.path.join(path, job["unique_info"]["job_pre_calculated_filename"]))
                     
-                    send_path = os.path.join(path, job["unique_info"]["job_filename"])
+                    send_path = os.path.join(path, job["unique_info"]["job_pre_calculated_filename"])
 
                     idx = int(d.replace("MACHINE", ""))
 
@@ -83,15 +95,15 @@ class ActionManager:
                     slave = db.slaves.get_slave(machine["slave_id"])
                     
 
-                    encoder = MultipartEncoder(fields={'file': (job["unique_info"]["job_filename"], open(send_path, "rb"), 'application/octet-stream'), 
-                        "json": ('payload.json', json.dumps({"filename": job["unique_info"]["job_filename"], "unique_info":json.loads(machine["unique_info"].replace("'", '"')), "id": machine["id"]}), "application/json")}
+                    encoder = MultipartEncoder(fields={'file': (job["unique_info"]["job_pre_calculated_filename"], open(send_path, "rb"), 'application/octet-stream'), 
+                        "json": ('payload.json', json.dumps({"filename": job["unique_info"]["job_pre_calculated_filename"], "unique_info":json.loads(machine["unique_info"].replace("'", '"')), "id": machine["id"]}), "application/json")}
                     )
                     
                     r = requests.post(
                         slave["ip"] + "/api/machines/upload_gcode", data=encoder, headers={'Content-Type': encoder.content_type}
                     )
 
-                    services.machines.start_job(FakeFlaskRequest({"machine_id": idx, "file": job["unique_info"]["job_filename"], "token": db.users.get_token("BYPASS")}))
+                    services.machines.start_job(FakeFlaskRequest({"machine_id": idx, "file": job["unique_info"]["job_pre_calculated_filename"], "token": db.users.get_token("BYPASS")}))
                     job["status"] = "В работе"
                     job["work_start"] = utils.time_now()
                     db.work_queue.overwrite_job(job["id"], job)

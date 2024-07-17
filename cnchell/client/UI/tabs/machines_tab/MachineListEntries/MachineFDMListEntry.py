@@ -257,15 +257,39 @@ class MachineFDMListEntry(QFrame):
 
 
     def delete_self(self):
+        jobs = env.net_manager.work_queue.get_queue(self.machine["id"])
+        if len(jobs) > 0:
+            if jobs[0]["status"] == "В работе":
+                utils.message("Нельзя удалить станок пока на нём не завершена работа.")
+                return
         self.dlg = QYesOrNoDialog("Вы уверены, что хотите удалить станок?")
         self.dlg.exec()
         if self.dlg.answer:
-            # TODO: request parts reorder
+            if len(jobs) > 0:
+                utils.message("Все работы станка будут отправлены в нераспределенную очередь.")
+
+                ids_to_del = []
+                indexes_to_del = []
+                changed_jobs = []
+                k = 0
+                for i in range(len(jobs)):
+                    job = jobs[i+k]
+                    if job["status"] != "В работе":
+                        ids_to_del.append(job["id"])
+                        indexes_to_del.append(job["index"])
+                        job["machine_id"] = -1
+                        changed_jobs.append(job)
+                        del jobs[i+k]
+                        k-=1
+
+                for job in changed_jobs:
+                    env.net_manager.work_queue.overwrite_job(job["id"], job)
+
             try:
                 env.net_manager.machines.delete(self.machine["id"])
                 self.hide()
-                if self.parent() != None:
-                    self.setParent(None)
+                del self
+                utils.message("Успешно")
             except:
                 pass
 
@@ -362,6 +386,8 @@ class MachineFDMListEntry(QFrame):
         while True:
             try:
                 self.machine = env.net_manager.machines.get_machine(self.machine["id"])
+                if self.machine == None:
+                    return
                 self.ping_signals.status_changed.emit(self.machine["status"])
             except: 
                 self.ping_signals.status_changed.emit("Нет соединения")

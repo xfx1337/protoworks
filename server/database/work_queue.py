@@ -17,7 +17,9 @@ class WorkQueue:
             work_start INT,
             status VARCHAR(255),
             index INT,
-            unique_info VARCHAR(1024)
+            unique_info VARCHAR(1024),
+            _part_id INT DEFAULT -1,
+            _job_filename VARCHAR(255)
         )
         """)
 
@@ -60,13 +62,21 @@ class WorkQueue:
         work_start = job["work_start"]
         status = job["status"]
         unique_info = json.dumps(job["unique_info"])
+        _part_id = -1
+        _job_filename = ""
+
+        if "job_part_id" in job["unique_info"]:
+            _part_id = job["unique_info"]["job_part_id"]
+
+        if "job_filename" in job["unique_info"]:
+            _job_filename = job["unique_info"]["job_filename"]
 
         if idx == -1:
             idx = self.get_last_index(machine_id)+1
 
         cursor.execute("UPDATE work_queue SET index = index + 1 WHERE index >= %s and machine_id = %s", [idx, machine_id])
-        cursor.execute("INSERT INTO work_queue (machine_id, work_time, work_start, status, index, unique_info) VALUES (%s, %s, %s, %s, %s, %s)", 
-        [machine_id, work_time, work_start, status, idx, unique_info])
+        cursor.execute("INSERT INTO work_queue (machine_id, work_time, work_start, status, index, unique_info, _part_id, _job_filename) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", 
+        [machine_id, work_time, work_start, status, idx, unique_info, _part_id, _job_filename])
         connection.commit()
 
         self.db.close(connection)
@@ -94,8 +104,19 @@ class WorkQueue:
         unique_info = json.dumps(job["unique_info"])
         index = job["index"]
 
-        cursor.execute("UPDATE work_queue SET machine_id=%s, work_time=%s, work_start=%s, status=%s, index=%s, unique_info=%s WHERE id=%s", 
-        [machine_id, work_time, work_start, status, index, unique_info, id])
+        _part_id = -1
+        if "job_part_id" in job["unique_info"]:
+            _part_id = job["unique_info"]["job_part_id"]
+
+        _job_filename = ""
+        if "job_filename" in job["unique_info"]:
+            _job_filename = job["unique_info"]["job_filename"]
+
+        if id == -1:
+            id = self.get_last_index(machine_id)+1
+
+        cursor.execute("UPDATE work_queue SET machine_id=%s, work_time=%s, work_start=%s, status=%s, index=%s, unique_info=%s, _part_id=%s, _job_filename=%s WHERE id=%s", 
+        [machine_id, work_time, work_start, status, index, unique_info, _part_id, _job_filename, id])
 
         connection.commit()
         self.db.close(connection)
@@ -135,3 +156,65 @@ class WorkQueue:
 
         connection.commit()
         self.db.close(connection)
+
+    def find_jobs_by_parts(self, parts, ignore_machine_id):
+        machines = {}
+        for p in parts:
+            if p["machine_id"] in machines.keys():
+                machines[int(p["machine_id"])].append(p)
+            else:
+                machines[int(p["machine_id"])] = [p]
+
+        connection, cursor = self.db.get_conn_cursor()
+        jobs_equals = {}
+        for m in machines.keys():
+            for p in machines[m]:
+                p["part_id"] = int(p["part_id"])
+                if not ignore_machine_id:
+                    cursor.execute("SELECT * FROM work_queue WHERE machine_id=%s AND _part_id=%s", [m, p["part_id"]])
+                else:
+                    cursor.execute("SELECT * FROM work_queue WHERE _part_id=%s", [p["part_id"]])
+                ret = cursor.fetchall()
+                for c in ret:
+                    job = {"id": c[0], "machine_id": c[1], "work_time": c[2], "work_start": c[3], "status": c[4], "index": c[5], "unique_info": json.loads(c[6])}
+                    if m in jobs_equals:
+                        if p["part_id"] in jobs_equals[m]:
+                            jobs_equals[m][p["part_id"]].append({"job": job, "part": p})
+                        else:
+                            jobs_equals[m][p["part_id"]] = [({"job": job, "part": p})]
+                    else:
+                        jobs_equals[m] = {}
+                        jobs_equals[m][p["part_id"]] = [({"job": job, "part": p})]
+        self.db.close(connection)
+        return jobs_equals
+
+    # fuck that "copy" of upper func
+    def find_jobs_by_files(self, parts, ignore_machine_id):
+        machines = {}
+        for p in parts:
+            if p["machine_id"] in machines.keys():
+                machines[int(p["machine_id"])].append(p)
+            else:
+                machines[int(p["machine_id"])] = [p]
+
+        connection, cursor = self.db.get_conn_cursor()
+        jobs_equals = {}
+        for m in machines.keys():
+            for p in machines[m]:
+                if not ignore_machine_id:
+                    cursor.execute("SELECT * FROM work_queue WHERE machine_id=%s AND _job_filename=%s", [m, p["filename_s"]])
+                else:
+                    cursor.execute("SELECT * FROM work_queue WHERE _job_filename=%s", [p["filename_s"]])
+                ret = cursor.fetchall()
+                for c in ret:
+                    job = {"id": c[0], "machine_id": c[1], "work_time": c[2], "work_start": c[3], "status": c[4], "index": c[5], "unique_info": json.loads(c[6])}
+                    if m in jobs_equals:
+                        if p["filename"] in jobs_equals[m]:
+                            jobs_equals[m][p["filename"]].append({"job": job, "part": p})
+                        else:
+                            jobs_equals[m][p["filename"]] = [({"job": job, "part": p})]
+                    else:
+                        jobs_equals[m] = {}
+                        jobs_equals[m][p["filename"]] = [({"job": job, "part": p})]
+        self.db.close(connection)
+        return jobs_equals

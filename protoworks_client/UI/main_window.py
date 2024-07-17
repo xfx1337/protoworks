@@ -14,11 +14,14 @@ import UI.stylesheets as stylesheets
 from UI.widgets.QInitButton import QInitButton
 from UI.widgets.QSystemBar import QSystemBar
 
+from UI.widgets.QYesOrNoDialog import QYesOrNoDialog
+
 from UI.paper_print.PaperPrintMenu import PaperPrintMenu
 
 from UI.help_window import HelpWindow
 
 import utils
+import os
 
 import pythoncom, win32com
 
@@ -149,3 +152,13 @@ class MainWindow(QMainWindow):
 
         id = env.tab_manager.open_tab(self.tab)
         self.body_splitter.addWidget(self.tab)
+    
+    def closeEvent(self, event):
+        self.dlg = QYesOrNoDialog("Вы действительно хотите закрыть приложение?")
+        self.dlg.exec()
+        if not self.dlg.answer:
+            event.ignore()
+            return
+        event.accept()
+        os._exit(0)
+        exit()

@@ -1,12 +1,11 @@
 import ctypes
-
 myappid = 'prototype.cnchell.cnchell.0.1' # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 from PySide6.QtCore import QFile, QTextStream, QDir
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QPalette, QColor
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 
 import os, sys
 sys.dont_write_bytecode = True # no pycache now
@@ -78,14 +77,18 @@ app.setPalette(
 # app.setPalette(palette)
 # app.setStyleSheet(OVERALL_STYLESHEET)
 
+print("running env")
 env = Environment()
 
 env.main_signals = MainSignals()
 
+print("running main window")
 window = MainWindow()
 window.show()
 
+print("running auth window")
 auth_window = AuthWindow()
 auth_window.show()
 
-app.exec()
+#QTimer.singleShot(0, window.close) # <---
+sys.exit(app.exec())

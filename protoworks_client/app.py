@@ -71,4 +71,4 @@ auth_window = AuthWindow()
 auth_window.show()
 
 utils.validate_run_requirements(env)
-app.exec()
+sys.exit(app.exec())

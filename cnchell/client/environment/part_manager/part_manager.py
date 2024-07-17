@@ -40,7 +40,7 @@ class PartManager:
         data = self.env.net_manager.files.send_files(src_path, project["server_path"], progress=progress, additional_data_to_send=[project_data, parts_data], files_only=files_only)
         self.env.net_manager.files.after_project_update(project["id"], data)
     
-    def get_available_part_files_by_id(self, project, id):
+    def get_available_part_files_by_id(self, project, id, path_only=False):
         path = os.path.join(self.env.config_manager["path"]["projects_path"], project["name"])
         path = os.path.join(path, "ДЕТАЛИ-PW")
         name = "_PW" + str(id)
@@ -49,7 +49,10 @@ class PartManager:
         for f in files:
             i = f.path.split("_PW")[-1].split(".")[0]
             if str(i) == str(id):
-                found.append(f)
+                if not path_only:
+                    found.append(f)
+                else:
+                    found.append(f.path)
         return found
     
     def check_part_up_to_date_with_origin(self, project, part):

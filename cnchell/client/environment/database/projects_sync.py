@@ -12,7 +12,7 @@ class ProjectsSync:
             id serial,
             project_id INT UNIQUE,
             last_synced_client_date INT,
-            update_id VARCHAR(64)
+            update_id TEXT
         )
         """)
     

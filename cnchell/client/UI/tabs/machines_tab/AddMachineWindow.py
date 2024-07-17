@@ -174,4 +174,5 @@ class AddMachineWindow(QWidget):
         baudrate)
         
         utils.message("Станок добавлен", tittle="Оповещение")
+        utils.message("Для запуска локального сервера станка требуется перезапуск программы.", tittle="Внимание!")
         self.close()

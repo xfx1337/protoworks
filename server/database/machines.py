@@ -67,9 +67,18 @@ class Machines:
 
     def get_machine(self, idx):
         connection, cursor = self.db.get_conn_cursor()
-        cursor.execute(f"SELECT * FROM machines WHERE id={idx}")
+        cursor.execute(f"SELECT * FROM machines WHERE id={int(idx)}")
         s = cursor.fetchone()
+        self.db.close(connection)
+        if s == None:
+            return None
         machine = {"id": s[0], "plate": {"x": s[2], "y": s[3], "z": s[4]}, "name": s[1], "unique_info": s[5], "slave_id": s[6],
             "delta": {"radius": s[7], "height": s[8]}, "gcode_manager": s[9], "baudrate": s[10]}
-        self.db.close(connection)
         return machine
+
+    def delete(self, idx):
+        connection, cursor = self.db.get_conn_cursor()
+        cursor.execute(f"""
+        DELETE FROM machines WHERE id = %s""", [idx])
+        connection.commit()
+        self.db.close(connection)

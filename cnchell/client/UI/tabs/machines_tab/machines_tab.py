@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QF
 from PySide6.QtGui import QIntValidator
 
 
-import os
+import os, shutil
 
 from environment.tab_manager.Tab import Tab
 
@@ -171,6 +171,9 @@ class MachinesWidget(QWidget, Tab):
         self.shutdown_machines_btn = QInitButton("Отключить все станки", callback=self.shutdown_machines)
         self.machines_frame_layout.addWidget(self.shutdown_machines_btn)
 
+        self.recheck_calculations_btn = QInitButton("Проверить наличие сгенерированных расчетных файлов", callback=self.recheck_calc)
+        self.machines_frame_layout.addWidget(self.recheck_calculations_btn)
+
         self.machine_frame.setLayout(self.machines_frame_layout)
         self.scrollWidgetLayout.insertWidget(i, self.machine_frame)
         self.scrollWidgetLayout.setAlignment(self.machine_frame, Qt.AlignmentFlag.AlignTop)
@@ -180,6 +183,16 @@ class MachinesWidget(QWidget, Tab):
 
         #self.scrollWidgetLayout.insertWidget(0, )
         #self.scrollWidgetLayout.setAlignment(self.pathes_label, Qt.AlignmentFlag.AlignTop)
+
+    def recheck_calc(self):
+        path = env.config_manager["path"]["calculation_path"]
+        checked = os.path.join(path, "Checked")
+        #shutil.copy(os.path.join(path, f), os.path.join(path, "Checked", f))
+
+        filenames = next(os.walk(checked), (None, None, []))[2]  # [] if no file
+        for f in filenames:
+            shutil.copy(os.path.join(path, "Checked", f), os.path.join(path, f))
+            os.remove(os.path.join(path, "Checked", f))
 
     def set_hub_info(self, data):
         if data == None:
@@ -285,7 +298,7 @@ class MachinesWidget(QWidget, Tab):
     
     def open_slave_list(self):
         self.wnd = SlavesListWindow()
-        self.wnd.show()
+        self.nd.show()
     
     def open_machine_list(self):
         self.wnd = MachinesListWindow()

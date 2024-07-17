@@ -23,6 +23,13 @@ class Slaves:
         connection.commit()
         self.db.close(connection)
     
+    def delete(self, idx):
+        connection, cursor = self.db.get_conn_cursor()
+        cursor.execute(f"""
+        DELETE FROM slaves WHERE id = %s""", [idx])
+        connection.commit()
+        self.db.close(connection)
+
     def get_slaves_list(self, type_s):
         connection, cursor = self.db.get_conn_cursor()
         if type_s == -1:

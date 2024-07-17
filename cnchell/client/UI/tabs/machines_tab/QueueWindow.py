@@ -119,8 +119,7 @@ class QueueWindow(QWidget):
     def calculate_full_time(self):
         full_time = 0
         for job in self.queue:
-            job["work_time"] = env.machine_utils.calculate_job_time(job)
-            full_time += job["work_time"]
+            full_time += env.machine_utils.calculate_job_time(job)
         
         self.full_time_label.setText(f"Общее время работы: {utils.seconds_to_str(full_time)}")
 
@@ -230,6 +229,7 @@ class QueueWindow(QWidget):
         files_send = []
 
         for f in not_parts:
+            work_time = 0
             un_filename = utils.get_unique_id()
             files_send.append({un_filename: f})
             job_pre_calculated = False
@@ -246,6 +246,8 @@ class QueueWindow(QWidget):
                 unique_info["job_pre_calculated_machine"] = -1
                 unique_info["job_filename"] = f.split("\\")[-1]
                 unique_info["job_send_filename"] = un_filename
+            unique_info["job_count_need"] = 1
+            unique_info["job_count_done"] = 0
             
             job = {"machine_id": self.machine["id"], "work_time": env.machine_utils.calculate_job_time_by_file(f), "work_start": -1, "status": "Ожидание", "unique_info": unique_info}
 
@@ -264,8 +266,10 @@ class QueueWindow(QWidget):
             "job_part_name": f["name"], 
             "job_project_id": f["project_id"],
             "job_pre_calculated": job_pre_calculated,
-            "job_pre_calculated_machine": m_id}
-            job = {"machine_id": self.machine["id"], "work_time": env.machine_utils.calculate_job_time_by_file(f), "work_start": -1, "status": "Ожидание", "unique_info": unique_info}
+            "job_pre_calculated_machine": m_id,
+            "job_count_need": 1,
+            "job_count_done": 0}
+            job = {"machine_id": self.machine["id"], "work_time": env.machine_utils.calculate_job_time_by_file(f["path"]), "work_start": -1, "status": "Ожидание", "unique_info": unique_info}
             jobs.append(job)
 
         env.net_manager.work_queue.add_jobs(jobs, files_send)
@@ -290,8 +294,6 @@ class QueueWindow(QWidget):
         if self.queue == self.old_queue:
             return
 
-        print("update")
-
         for p in self.job_entries:
             if p.parent() != None:
                 p.setParent(None)
@@ -303,7 +305,7 @@ class QueueWindow(QWidget):
             if self.enable_job_drop:
                 p = JobListEntry(job, queue=self)
             else:
-                p = JobListEntry(job)
+                p = JobListEntry(job, queue=self)
             self.scrollWidgetLayout.insertWidget(i, p)
             self.scrollWidgetLayout.setAlignment(p, Qt.AlignmentFlag.AlignTop)
 

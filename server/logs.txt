@@ -1,0 +1,35 @@
+2024-07-05 20:48:27,771 [MainThread  ] [INFO ]  ProtoWorks server v0.1
+2024-07-05 20:48:27,772 [MainThread  ] [INFO ]  [db] initializing
+2024-07-05 20:48:27,772 [MainThread  ] [INFO ]  [main] checking userlist
+2024-07-05 20:48:27,778 [MainThread  ] [INFO ]  [backup] running checking thread
+2024-07-05 20:48:27,778 [MainThread  ] [INFO ]  [main] running flask server
+2024-07-05 20:48:27,778 [MainThread  ] [INFO ]  
+2024-07-05 20:48:27,789 [Thread-2 (ma] [INFO ]  [main] running main hub watch dog
+2024-07-05 20:48:27,818 [MainThread  ] [INFO ]   * Restarting with stat
+2024-07-05 20:48:28,911 [MainThread  ] [INFO ]  ProtoWorks server v0.1
+2024-07-05 20:48:28,911 [MainThread  ] [INFO ]  [db] initializing
+2024-07-05 20:48:28,913 [MainThread  ] [INFO ]  [main] checking userlist
+2024-07-05 20:48:28,919 [MainThread  ] [INFO ]  [backup] running checking thread
+2024-07-05 20:48:28,919 [MainThread  ] [INFO ]  [main] running flask server
+2024-07-05 20:48:28,919 [MainThread  ] [INFO ]  
+2024-07-05 20:48:28,924 [Thread-2 (ma] [INFO ]  [main] running main hub watch dog
+2024-07-05 20:48:28,951 [MainThread  ] [WARNI]   * Debugger is active!
+2024-07-05 20:48:28,954 [MainThread  ] [INFO ]   * Debugger PIN: 135-567-232
+2024-07-05 20:48:32,574 [Thread-3 (ru] [INFO ]  main hub connected
+2024-07-05 20:52:37,855 [MainThread] [INFO]  ProtoWorks server v0.1
+2024-07-05 20:52:37,855 [MainThread] [INFO]  [db] initializing
+2024-07-05 20:52:37,855 [MainThread] [INFO]  [main] checking userlist
+2024-07-05 20:52:37,859 [MainThread] [INFO]  [backup] running checking thread
+2024-07-05 20:52:37,859 [MainThread] [INFO]  [main] running flask server
+2024-07-05 20:52:37,859 [MainThread] [INFO]  
+2024-07-05 20:52:37,865 [Thread-2 (main_hub_watchdog)] [INFO]  [main] running main hub watch dog
+2024-07-05 20:52:37,891 [MainThread] [INFO]   * Restarting with stat
+2024-07-05 20:52:38,855 [MainThread] [INFO]  ProtoWorks server v0.1
+2024-07-05 20:52:38,855 [MainThread] [INFO]  [db] initializing
+2024-07-05 20:52:38,857 [MainThread] [INFO]  [main] checking userlist
+2024-07-05 20:52:38,865 [MainThread] [INFO]  [backup] running checking thread
+2024-07-05 20:52:38,865 [MainThread] [INFO]  [main] running flask server
+2024-07-05 20:52:38,866 [MainThread] [INFO]  
+2024-07-05 20:52:38,871 [Thread-2 (main_hub_watchdog)] [INFO]  [main] running main hub watch dog
+2024-07-05 20:52:38,896 [MainThread] [WARNING]   * Debugger is active!
+2024-07-05 20:52:38,901 [MainThread] [INFO]   * Debugger PIN: 135-567-232

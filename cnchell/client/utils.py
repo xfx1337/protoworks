@@ -23,6 +23,16 @@ def unix_is_expired(t):
         return True
     return False
 
+def get_seconds(s):
+    s = s.strip()
+    if s[-1] == "s":
+        return int(s[:-1])
+    elif s[-1] == "m":
+        return int(s[:-1])*60
+    elif s[-1] == "h":
+        return int(s[-1])*3600
+    return 0
+    
 def project_status(st):
     if st == defines.PROJECT_IN_WORK:
         return "В работе"

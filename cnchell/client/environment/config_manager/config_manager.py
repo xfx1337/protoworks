@@ -1,6 +1,7 @@
 from configparser import *
 
 from singleton import singleton
+import os
 
 @singleton
 class Config(ConfigParser):
@@ -19,3 +20,6 @@ class Config(ConfigParser):
     def override(self):
         with open(self.config_file, 'w', encoding="utf-8") as f:
             self.write(f)
+
+    def get_abs_path(self):
+        return os.path.join(os.getcwd(), self.config_file)

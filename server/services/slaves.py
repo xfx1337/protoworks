@@ -46,6 +46,16 @@ def add_slave(request):
 
     return "Успешно", 200
 
+def delete_slave(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+
+    idx = data["id"]
+    db.slaves.delete(idx)
+    return "Успешно", 200
+
 def get_slaves_list(request):
     data = request.get_json()
     ret = db.users.valid_token(data["token"])

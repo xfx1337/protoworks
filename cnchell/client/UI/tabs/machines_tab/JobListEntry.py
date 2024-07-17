@@ -32,11 +32,16 @@ from PySide6.QtCore import Signal, QObject
 from PySide6.QtCore import Qt, QMimeData
 from PySide6.QtGui import QDrag
 
+from UI.widgets.QAskForNumberDialog import QAskForNumberDialog
+
 class JobListEntry(QFrame):
-    def __init__(self, job, drag_enable=True, queue=None):
+    def __init__(self, job, drag_enable=True, queue=None, enable_select=False, select_callback=None):
         super().__init__()
         self.job = job
         self.queue = queue
+
+        self.enable_select = enable_select
+        self.select_callback = select_callback
 
         self.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
         self.setLineWidth(1)
@@ -81,19 +86,30 @@ class JobListEntry(QFrame):
         if "job_pre_calculated_machine" in unique_info:
             job_pre_calculated_machine = unique_info["job_pre_calculated_machine"]
             if job_pre_calculated_machine != -1:
-                job_pre_calculated_machine_name = env.net_manager.machines.get_machine(job_pre_calculated_machine)["name"]
+                try:
+                    job_pre_calculated_machine_name = env.net_manager.machines.get_machine(job_pre_calculated_machine)["name"]
+                except:
+                    job_pre_calculated_machine_name = "Недоступно."
 
         #if "job_project_name" in unique_info:
         #    job_project_name = unique_info["job_project_name"]
 
+        job_count_done = unique_info["job_count_done"]
+        job_count_need = unique_info["job_count_need"]
+
+        need = job_count_need-job_count_done
+
         self.id_label = QLabel(f"ID: {job_id}")
         self.name_label = QLabel(f"Название: {job_name}")
         self.filename_label = QLabel(f"Название файла: {job_filename}")
+        self.part_id_label = QLabel(f"ID детали: {job_part_id}")
         self.part_name_label = QLabel(f"Название детали: {job_part_name}")
+        self.count_need_label = QLabel(f"Требуемое количество: {job_count_need}")
+        self.count_done_label = QLabel(f"Количество выполненных: {job_count_done}")
         self.project_name_label = QLabel(f"Название проекта: {job_project_name}")
         self.job_pre_calculated_label = QLabel(f"Рассчитана под станок: {job_pre_calculated}")
         self.job_pre_calculated_machine_label = QLabel(f"Рассчитана под станок(название): {job_pre_calculated_machine_name}")
-        self.work_time_label = QLabel(f"Время работы: {utils.seconds_to_str(work_time)}")
+        self.work_time_label = QLabel(f"Время работы, рассчитанное под станок: {utils.seconds_to_str(work_time*need)}")
         
         if work_start >= 0:
             self.work_start_label = QLabel(f"Время начала работы: {utils.time_by_unix(work_start)}")
@@ -105,7 +121,10 @@ class JobListEntry(QFrame):
         self.layout.addWidget(self.id_label)
         self.layout.addWidget(self.name_label)
         self.layout.addWidget(self.filename_label)
+        self.layout.addWidget(self.part_id_label)
         self.layout.addWidget(self.part_name_label)
+        self.layout.addWidget(self.count_need_label)
+        self.layout.addWidget(self.count_done_label)
         self.layout.addWidget(self.project_name_label)
         self.layout.addWidget(self.job_pre_calculated_label)
         self.layout.addWidget(self.job_pre_calculated_machine_label)
@@ -120,20 +139,57 @@ class JobListEntry(QFrame):
         action_make_first = self.menu.addAction("Установить как следующую на выполнение")
         action_right_now = self.menu.addAction("Отменить текущую и запустить данную прямо сейчас")
         action_calculate = self.menu.addAction("Пересчитать")
+        action_count_need = self.menu.addAction("Указать требуемое количество")
+        action_count_done = self.menu.addAction("Указать количество выполненных")
 
         action_redistribution.triggered.connect(self.redistribution)
         action_delete_job.triggered.connect(self.delete_job)
         action_make_first.triggered.connect(self.make_first)
         action_right_now.triggered.connect(self.make_right_now)
         action_calculate.triggered.connect(self.calculate)
-        
+        action_count_need.triggered.connect(self.set_count_need)
+        action_count_done.triggered.connect(self.set_count_done)
 
         self.setLayout(self.layout)
+
+        if self.enable_select:
+            self.select_btn = QInitButton("Выбрать", callback=self.__select)
+            self.layout.addWidget(self.select_btn)
 
         #drag
         self.selected = False
         self.dragStartPosition = self.pos()
         self.drag_enable = drag_enable
+
+    def __select(self):
+        self.select_btn.setText("Отменить выбор")
+        self.selected = not self.selected
+        self.check_selected()
+        if self.selected == True:
+            self.select_callback(self.job["id"])
+        else:
+            self.select_btn.setText("Выбрать")
+
+    def set_count_need(self):
+        dlg = QAskForNumberDialog(text = "Требуемое количество:", title="Выбор")
+        dlg.exec()
+        answer = dlg.answer
+        if answer != None:
+            self.job["unique_info"]["job_count_need"] = int(answer)
+            env.net_manager.work_queue.overwrite_job(self.job["id"], self.job)
+            self._update(self.job)
+
+    def set_count_done(self):
+        dlg = QAskForNumberDialog(text = "Имеющееся количество:", title="Выбор")
+        dlg.exec()
+        answer = dlg.answer
+        if answer != None:
+            self.job["unique_info"]["job_count_done"] = int(answer)
+            env.net_manager.work_queue.overwrite_job(self.job["id"], self.job)
+            self._update(self.job)
+        
+        if self.job["unique_info"]["job_count_done"] == self.job["unique_info"]["job_count_need"] and self.job["unique_info"]["job_count_need"] != 0:
+            self.delete_job()
 
     def calculate(self):
         if self.job["status"] == "В работе":
@@ -183,20 +239,32 @@ class JobListEntry(QFrame):
         if "job_pre_calculated_machine" in unique_info:
             job_pre_calculated_machine = unique_info["job_pre_calculated_machine"]
             if job_pre_calculated_machine != -1:
-                job_pre_calculated_machine_name = env.net_manager.machines.get_machine(job_pre_calculated_machine)["name"]
+                try:
+                    job_pre_calculated_machine_name = env.net_manager.machines.get_machine(job_pre_calculated_machine)["name"]
+                except:
+                    job_pre_calculated_machine_name = "Недоступно."
+
+        job_count_done = unique_info["job_count_done"]
+        job_count_need = unique_info["job_count_need"]
 
         #if "job_project_name" in unique_info:
         #    job_project_name = unique_info["job_project_name"]
 
+        need = job_count_need-job_count_done
+
         self.id_label.setText(f"ID: {job_id}")
         self.name_label.setText(f"Название: {job_name}")
         self.filename_label.setText(f"Название файла: {job_filename}")
+        self.part_id_label.setText(f"ID детали: {job_part_id}")
         self.part_name_label.setText(f"Название детали: {job_part_name}")
         self.project_name_label.setText(f"Название проекта: {job_project_name}")
         self.job_pre_calculated_label.setText(f"Рассчитана под станок: {job_pre_calculated}")
         self.job_pre_calculated_machine_label.setText(f"Рассчитана под станок(название): {job_pre_calculated_machine_name}")
-        self.work_time_label.setText(f"Время работы: {utils.seconds_to_str(work_time)}")
+        self.work_time_label.setText(f"Время работы, рассчитанное под станок: {utils.seconds_to_str(work_time*need)}")
         
+        self.count_need_label.setText(f"Требуемое количество: {job_count_need}")
+        self.count_done_label.setText(f"Количество выполненных: {job_count_done}")
+
         if work_start >= 0:
             self.work_start_label.setText(f"Время начала работы: {utils.time_by_unix(work_start)}")
         else:
@@ -238,12 +306,11 @@ class JobListEntry(QFrame):
             self.check_selected()
 
     def check_selected(self):
-        if not self.drag_enable:
-            return
-        if self.selected:
-            self.setStyleSheet(stylesheets.SELECTED_STYLESHEET)
-        else:
-            self.setStyleSheet(stylesheets.UNSELECTED_STYLESHEET)
+        if self.enable_select or self.drag_enable:
+            if self.selected:
+                self.setStyleSheet(stylesheets.SELECTED_STYLESHEET)
+            else:
+                self.setStyleSheet(stylesheets.UNSELECTED_STYLESHEET)
 
 
     def make_right_now(self):

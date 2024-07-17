@@ -239,7 +239,10 @@ class Files:
         different_from_server = np.setdiff1d(server_file_list_relative, client_file_list_relative).tolist()
 
         sync_data_client = self.env.db.projects_sync.get_projects_sync_data()
-        client_update_time = sync_data_client[project["id"]]["date"]
+        try:
+            client_update_time = sync_data_client[project["id"]]["date"]
+        except:
+            client_update_time = 0
         server_update_time = project["last_synced_server"]
 
         delete_from_server_list_dc = []

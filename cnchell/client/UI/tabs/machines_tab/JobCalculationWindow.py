@@ -25,6 +25,8 @@ from UI.widgets.QAskForNumberDialog import QAskForNumberDialog
 from UI.widgets.QAskForFilesDialog import QAskForFilesDialog
 from UI.widgets.QAskForDirectoryDialog import QAskForDirectoryDialog
 
+from UI.widgets.QProgramWidget import QProgramWidget
+
 import defines
 
 from PySide6.QtCore import Signal, QObject
@@ -44,7 +46,7 @@ class JobCalculationWindow(QFrame):
         self.setWindowIcon(env.templates_manager.icons["cnchell"])
         #self.setMinimumSize(QSize(800, 600))
         id = self.job["id"]
-        self.setWindowTitle(f"расчёт работы ID: {id}")
+        self.setWindowTitle(f"Расчёт работы ID: {id}")
 
         self.files = JobCalculationFiles()
 
@@ -66,7 +68,7 @@ class JobCalculationWindow(QFrame):
         self.h_layout.addLayout(self.left_layout, 50)
 
         self.right_layout = QVBoxLayout()
-        self.calculation_frame = CalculationFrame(self.job, self.files)
+        self.calculation_frame = CalculationFrame(self.job, self.files, self)
         self.right_layout.addWidget(self.calculation_frame)
 
         self.h_layout.addLayout(self.right_layout, 50)
@@ -88,6 +90,9 @@ class JobCalculationWindow(QFrame):
             self.job["unique_info"]["job_pre_calculated_filename"] = self.files.calculated_file.split("\\")[-1]
             self.job["unique_info"]["job_pre_calculated"] = True
             self.job["unique_info"]["job_pre_calculated_machine"] = self.queue.machine["id"]
+
+            self.job["work_time"] = env.machine_utils.calculate_job_time_by_file(self.files.calculated_file)
+
             files.append({self.job["unique_info"]["job_send_pre_calculated_filename"]: self.files.calculated_file})
         if self.job["status"] == "Ошибка. Отсутствует файл расчёта для станка.":
             self.job["status"] = "В ожидании"
@@ -144,17 +149,26 @@ class JobInfoFrame(QFrame):
         if "job_pre_calculated_machine" in unique_info:
             job_pre_calculated_machine = unique_info["job_pre_calculated_machine"]
             if job_pre_calculated_machine != -1:
-                job_pre_calculated_machine_name = env.net_manager.machines.get_machine(job_pre_calculated_machine)["name"]
+                try:
+                    job_pre_calculated_machine_name = env.net_manager.machines.get_machine(job_pre_calculated_machine)["name"]
+                except:
+                    job_pre_calculated_machine_name = "Недоступно."
 
+
+        job_count_done = unique_info["job_count_done"]
+        job_count_need = unique_info["job_count_need"]
 
         self.id_label = QLabel(f"ID: {job_id}")
         self.name_label = QLabel(f"Название: {job_name}")
         self.filename_label = QLabel(f"Название файла: {job_filename}")
+        self.part_id_label = QLabel(f"ID детали: {job_part_id}")
         self.part_name_label = QLabel(f"Название детали: {job_part_name}")
+        self.count_need_label = QLabel(f"Требуемое количество: {job_count_need}")
+        self.count_done_label = QLabel(f"Количество выполненных: {job_count_done}")
         self.project_name_label = QLabel(f"Название проекта: {job_project_name}")
         self.job_pre_calculated_label = QLabel(f"Рассчитана под станок: {job_pre_calculated}")
         self.job_pre_calculated_machine_label = QLabel(f"Рассчитана под станок(название): {job_pre_calculated_machine_name}")
-        self.work_time_label = QLabel(f"Время работы: {utils.seconds_to_str(work_time)}")
+        self.work_time_label = QLabel(f"Время работы, рассчитанное под станок: {utils.seconds_to_str(work_time*(job_count_need-job_count_done))}")
         
         if work_start >= 0:
             self.work_start_label = QLabel(f"Время начала работы: {utils.time_by_unix(work_start)}")
@@ -166,7 +180,10 @@ class JobInfoFrame(QFrame):
         self.layout.addWidget(self.id_label)
         self.layout.addWidget(self.name_label)
         self.layout.addWidget(self.filename_label)
+        self.layout.addWidget(self.part_id_label)
         self.layout.addWidget(self.part_name_label)
+        self.layout.addWidget(self.count_need_label)
+        self.layout.addWidget(self.count_done_label)
         self.layout.addWidget(self.project_name_label)
         self.layout.addWidget(self.job_pre_calculated_label)
         self.layout.addWidget(self.job_pre_calculated_machine_label)
@@ -240,7 +257,7 @@ class FileSelectFrame(QFrame):
         pro = Progress()
         env.task_manager.append_task(lambda: self.download_thread(pro, download_path), "[Загрузка] Скачивание файлов", progress=pro)
 
-    def download_thread(self, pro, download_path):
+    def download_thread(self, pro, download_path, dont_open_explorer=False):
         files = []
         files_rename = []
         s_path = os.path.join(env.net_manager.files.get_server_path("machines_path"), "WorkingDirectory")
@@ -260,13 +277,16 @@ class FileSelectFrame(QFrame):
         path = env.net_manager.files.get_zipped_files(path=s_path, files=files, progress=pro)
         env.file_manager.unzip_data_archive(os.path.join(path), download_path)
 
-
+        files_got = []
         for i in range(len(files)):
             shutil.copy(os.path.join(download_path, files[i].split("\\")[-1]), os.path.join(download_path, files_rename[i]))
+            files_got.append(os.path.join(download_path, files_rename[i]))
             os.remove(os.path.join(download_path, files[i].split("\\")[-1]))
 
         path = "\\".join(download_path.split("\\")[:-1])
-        subprocess.Popen(f'explorer "{path}"')
+        if not dont_open_explorer:
+            subprocess.Popen(f'explorer "{path}"')
+        return files_got
         
 
     def open_calc_directory(self):
@@ -315,7 +335,8 @@ class FileSelectFrame(QFrame):
         self.file_calculated_label.setText(f"Рассчитанный под станок файл: {calc_file_name}")
 
 class CalculationFrame(QFrame):
-    def __init__(self, job, files):
+    def __init__(self, job, files, parent):
+        self.parent = parent
         super().__init__()
         self.job = job
         self.files = files
@@ -330,5 +351,58 @@ class CalculationFrame(QFrame):
 
         self.layout.addWidget(self.label)
 
+        self.orca_slicer_btn = QProgramWidget("OrcaSlicer(FDM)", "orca", "Рассчитать в OrcaSlicer", callback=self.open_orca, pixmap_sizes=[64,64])
+        self.layout.addWidget(self.orca_slicer_btn)
+        self.layout.setAlignment(Qt.AlignTop)
 
+    def open_orca(self):
+        orca_path = os.path.join(env.config_manager["path"]["orca_path"], "orca-slicer.exe")
+
+        pro = Progress()
+        files = self.parent.file_select_frame.download_thread(pro, env.config_manager["path"]["temp_path"], dont_open_explorer=True)
+
+        if os.path.isfile(self.parent.file_select_frame.files.selected_file):
+            files.append(self.parent.file_select_frame.files.selected_file)
+
+        if "job_part_id" in self.job["unique_info"]:
+            job_part_id = self.job["unique_info"]["job_part_id"]
+            job_project_id = self.job["unique_info"]["job_project_id"]
+            project = env.net_manager.projects.get_project_info(job_project_id)
+            files_part = env.part_manager.get_available_part_files_by_id(project, job_part_id, path_only=True)
+            for f in files_part:
+                files.append(f)
+
+        out = "Сейчас будет открыт OrcaSlicer, в котором вы сможете создать GCODE под выбранный в OrcaSlicer станок. Пожалуйста, ознакомьтесь с пунктом меню или инструкции 'Настройки->Конфигурация подключений станков на клиенте'. После слайсинга в OrcaSlicer вам нужно будет экспортировать файл на станок."
+
+        try:
+            idx = self.parent.queue.machine["id"]
+            host_type_i = env.net_manager.slaves.get_slave(self.parent.queue.machine["slave_id"])["slave"]["type"]
+            if host_type_i in [defines.FDM_DIRECT, defines.FDM_OCTO, defines.FDM_KLIPPER]:
+                host_type = "Octo/Klipper"
+            else:
+                host_type = "Не поддерживается"
+            out += f"\nID станка, в очереди которого находится деталь сейчас: {idx}\nХост станка: http://127.0.0.1:{defines.FAKE_OCTO_FIRST_PORT+idx}\nТип хоста: {host_type}"
+        except:
+            pass
+
+        is_part = False
+        job_part_id = -1
+        if "job_part_id" in self.job["unique_info"]:
+            job_part_id = self.job["unique_info"]["job_part_id"]
+            is_part = True
+
+        for f in files:
+            if f.split(".")[-1] in defines.ORCA_SLICER_INPUT_FILES:
+                if "_PW" not in f and is_part:
+                    f_new = f.split(".")[0] + f"_PW{job_part_id}." + f.split(".")[-1]
+                    
+                    try: os.rename(f, f_new)
+                    except: pass
+                    f = f_new
+
+                subprocess.Popen(f'"{orca_path}" "{f}"')
+                utils.message(out, tittle="Оповещение")
+                self.parent.hide()
+                del self.parent
+                return
 

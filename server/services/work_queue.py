@@ -139,3 +139,25 @@ def overwrite_job_files(request):
     db.work_queue.overwrite_job(idx, json.loads(job))
 
     return "Добавлены", 200
+
+def find_jobs_by_parts(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+    
+    parts = data["parts"]
+    ignore_machine_id = data["ignore_machine_equal"]
+    ret = db.work_queue.find_jobs_by_parts(parts, ignore_machine_id)
+    return json.dumps({"jobs_equals": ret}), 200
+
+def find_jobs_by_files(request):
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+    
+    parts = data["files"]
+    ignore_machine_id = data["ignore_machine_equal"]
+    ret = db.work_queue.find_jobs_by_files(parts, ignore_machine_id)
+    return json.dumps({"jobs_equals": ret}), 200

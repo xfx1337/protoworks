@@ -64,4 +64,10 @@ class QPathInput(QWidget):
             if self.selected_callback != None:
                 self.selected_callback()
             
-        
+    def reset(self):
+        self.path_button.setText("Выбрать")
+        self.path = None
+
+    def set_path(self, path):
+        self.path = path
+        self.path_button.setText(self.path)

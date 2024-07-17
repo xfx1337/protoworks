@@ -39,6 +39,7 @@ class QSelectOneFromList(QWidget):
         self.scrollWidgetLayout = self.scrollable.scrollWidgetLayout
         self.scrollWidget = self.scrollable.scrollWidget
 
+        self.layout.addWidget(self.label)
         self.layout.addWidget(self.scrollable)
 
         self.update_data()

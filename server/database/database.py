@@ -29,7 +29,7 @@ class Database:
         #except: raise exceptions.DatabaseInitFailed("failed to init db")
         self.connected = 0
         try:
-            self.connection_pool = psycopg2.pool.ThreadedConnectionPool(5, 20, dbname='protoworks', 
+            self.connection_pool = psycopg2.pool.ThreadedConnectionPool(5, 50, dbname='protoworks', 
             user='postgres', password='Flvbybcnhfnjh', host='localhost')
         except:
             raise exceptions.DatabaseInitFailed("failed to init db")
@@ -66,4 +66,5 @@ class Database:
         conn.cursor().close()
         self.connection_pool.putconn(conn)
         self.connected -= 1
-        print(f"connected: {self.connected}/20")
+        #print(f"connected: {self.connected}/20")
+        # sometime before, without that line program was just crashing
