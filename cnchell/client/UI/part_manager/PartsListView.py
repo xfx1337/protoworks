@@ -239,7 +239,7 @@ class PartsListView(QWidget):
         self.view_type_layout.addWidget(self.btn_filters_view)
         self.view_type_layout.addWidget(self.btn_search_view)
         self.view_type_layout.addWidget(self.btn_select_from_to)
-        self.view_type_layout.addWidget(self.btn_update_convertation)
+        #self.view_type_layout.addWidget(self.btn_update_convertation)
         self.view_type_layout.addWidget(self.btn_resolve_deletion)
         self.view_type_layout.addStretch()
 

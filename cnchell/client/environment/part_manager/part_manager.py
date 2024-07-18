@@ -59,8 +59,10 @@ class PartManager:
         try:
             client_path = utils.remove_path(project["server_path"], part["path"])
             project_path = os.path.join(self.env.config_manager["path"]["projects_path"], project["name"])
-            client_path = os.path.join(project_path, client_path)
-            origin_file = File(path=client_path, f_type=FILE)
+            if project_path[-1] != "\\":
+                project_path += "\\"
+            client_path_fix = {"path": str(os.path.join(os.path.abspath(project_path), client_path))} # fucken python optimizer breaking
+            origin_file = File(path=client_path_fix["path"], f_type=FILE)
         except:
             return -1
 

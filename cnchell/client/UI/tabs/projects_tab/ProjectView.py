@@ -84,11 +84,11 @@ class MachinesWorkMenu(QFrame):
         self.print_current_work_info = QInitButton("Печать информации о работе станков", callback=self.print_current_work_info)
 
         self.layout.addWidget(self.view_parts_btn)
-        self.layout.addWidget(self.machines_view_btn)
-        self.layout.addWidget(self.terminal_btn)
-        self.layout.addWidget(self.distribute_btn)
-        self.layout.addWidget(self.export_current_work_info)
-        self.layout.addWidget(self.print_current_work_info)
+        #self.layout.addWidget(self.machines_view_btn)
+        #self.layout.addWidget(self.terminal_btn)
+        #self.layout.addWidget(self.distribute_btn)
+        #self.layout.addWidget(self.export_current_work_info)
+        #self.layout.addWidget(self.print_current_work_info)
 
         self.setLayout(self.layout)
 

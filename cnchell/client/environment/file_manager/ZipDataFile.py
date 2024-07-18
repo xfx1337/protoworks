@@ -38,11 +38,11 @@ MACHINE_NAME: {self.author}
         self.add_list_end()
     
     
-    def create_files_list(self):
+    def create_files_list(self, _enable_arch_filenames_overwrite=False):
         self.content += "\nFILES_LIST:"
         for f in self.files:
             self.content += "\n"
-            self.content += self._gen_file_specs(f)
+            self.content += self._gen_file_specs(f, _enable_arch_filenames_overwrite=_enable_arch_filenames_overwrite)
         self.add_list_end()
 
     def create_additional_data(self, data):
@@ -63,7 +63,7 @@ MACHINE_NAME: {self.author}
         
         return path
 
-    def _gen_file_specs(self, f):
+    def _gen_file_specs(self, f, _enable_arch_filenames_overwrite=False):
         path = f.path
         if self.relative_path != None and self.relative_path != "":
             real_path = f.relative(self.relative_path)
@@ -75,9 +75,42 @@ MACHINE_NAME: {self.author}
         ret = f.to_dict()
         ret["path"] = real_path
         arch_filename = utils.get_unique_id()
+        if _enable_arch_filenames_overwrite:
+            arch_filename = f._overwrite_archive_filename
         ret["arch_filename"] = arch_filename
         self.FILE_LINKERS[arch_filename] = f.path
         return json.dumps(ret)
     
     def string(self):
         return self.content + "\n"
+
+    def overwrite_entry(self, entry):
+        j = 0
+        st_index = -1
+        for i in range(len(self.content)):
+            if j < len(entry["entry_start"]) and self.content[i] == entry["entry_start"][j]:
+                j += 1
+                if st_index == -1:
+                    st_index = i
+            elif j == len(entry["entry_start"]):
+                j = 0
+                break
+            else:
+                j = 0
+                st_index = -1
+        j = 0
+        end_index = -1
+        for i in range(st_index + len(entry["entry_start"]), len(self.content)):
+            if j < len(entry["entry_end"]) and self.content[i] == entry["entry_end"][j]:
+                j += 1
+                if end_index == -1:
+                    end_index = i
+            elif j == len(entry["entry_end"]):
+                j = 0
+                break
+            else:
+                j = 0
+                end_index = -1
+        end_index = end_index + len(entry["entry_end"])
+    
+        self.content = self.content[:st_index] + "\n" + entry["data"] + "\n" + self.content[end_index:]

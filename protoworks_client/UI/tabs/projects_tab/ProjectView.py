@@ -85,11 +85,11 @@ class PartsManagerView(QFrame):
         self.view_parts = QInitButton("Менеджер деталей", callback=self.view_parts)
         self.cnchell_btn = QInitButton("Открыть CNCHell", callback=self.open_cnchell)
 
-        self.layout.addWidget(self.create_part)
-        self.layout.addWidget(self.create_part_array)
+        #self.layout.addWidget(self.create_part)
+        #self.layout.addWidget(self.create_part_array)
         self.layout.addWidget(self.auto_create_parts_btn)
         self.layout.addWidget(self.view_parts)
-        self.layout.addWidget(self.cnchell_btn)
+        #self.layout.addWidget(self.cnchell_btn)
 
         self.setLayout(self.layout)
     
@@ -298,8 +298,8 @@ class ProjectView(QWidget):
         self.parts_manager = PartsManagerView(self.project)
         self.l_side.addWidget(self.parts_manager)
 
-        self.utilities = Utilities(self.project)
-        self.l_side.addWidget(self.utilities)
+        #self.utilities = Utilities(self.project)
+        #self.l_side.addWidget(self.utilities)
 
 
         self.r_side = QVBoxLayout()

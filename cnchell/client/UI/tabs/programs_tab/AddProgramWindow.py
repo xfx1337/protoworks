@@ -33,7 +33,8 @@ import defines
 
 from PySide6.QtCore import Signal, QObject
 
-from environment.file_manager.ZipDataAdditionalTypes import ProgramConfigurations 
+from environment.file_manager.ZipDataAdditionalTypes import ProgramConfigurations
+from environment.file_manager.ZipDataAdditionalTypes import FilesOverwrite 
 
 
 class AddProgramWindow(QWidget):
@@ -227,7 +228,17 @@ class AddProgramWindow(QWidget):
 
         data_send = ProgramConfigurations(self.dirs, self.links, self.files, program_install_path=self.program_install_path_input.path, 
         program_exe_path=self.program_exe_path, program_info=self.program)
-        zip_path = env.file_manager.make_data_zip(files, additional_data_to_send=data_send)
+
+        entry = FilesOverwrite(self.files, self.dirs)
+        dc = {"entry_start": "FILES_LIST:", "entry_end": "LIST_END", "data": entry.get_str()}
+
+        files_overwrite = []
+        for f in self.files:
+            f = File(path=f, f_type=defines.FILE)
+            f._overwrite_archive_filename = entry.get_arch_filename(f.path)
+            files_overwrite.append(f)
+
+        zip_path = env.file_manager.make_data_zip(files_overwrite, additional_data_to_send=data_send, overwrite_entries=[dc], _enable_arch_filenames_overwrite=True)
         
         sync_data = env.net_manager.configs.upload_zip(zip_path, self.program["name"], self.program["name_user"])
         env.db.programs_sync.set_program_sync_date(self.program["name"], int(sync_data["time"]), sync_data["update_id"])

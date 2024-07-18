@@ -68,7 +68,6 @@ class Configs:
             data = data, 
             headers = {'Content-type':'application/json'}) as r:
             r.raise_for_status()
-            progress.full = int(r.headers["Content-Length"])
             with open(local_filename, 'wb') as f:
                 for chunk in r.iter_content(defines.CHUNK_SIZE):
                     if chunk:

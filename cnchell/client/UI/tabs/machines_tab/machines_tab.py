@@ -118,10 +118,10 @@ class MachinesWidget(QWidget, Tab):
         self.hub_frame_layout.addWidget(self.change_hub_settings_btn)
 
         self.open_terminal_btn = QInitButton("Открыть терминал", callback=self.open_terminal)
-        self.hub_frame_layout.addWidget(self.open_terminal_btn)
+        #self.hub_frame_layout.addWidget(self.open_terminal_btn)
 
         self.monitoring_window_btn = QInitButton("Открыть окно мониторинга", callback=self.open_monitoring)
-        self.hub_frame_layout.addWidget(self.monitoring_window_btn)
+        #self.hub_frame_layout.addWidget(self.monitoring_window_btn)
 
         self.hub_frame.setLayout(self.hub_frame_layout)
         self.scrollWidgetLayout.insertWidget(i, self.hub_frame)
@@ -166,10 +166,10 @@ class MachinesWidget(QWidget, Tab):
         self.machines_frame_layout.addWidget(self.open_machine_list_btn)
 
         self.pause_machines_btn = QInitButton("Приостановить все станки", callback=self.pause_machines)
-        self.machines_frame_layout.addWidget(self.pause_machines_btn)
+        #self.machines_frame_layout.addWidget(self.pause_machines_btn)
 
         self.shutdown_machines_btn = QInitButton("Отключить все станки", callback=self.shutdown_machines)
-        self.machines_frame_layout.addWidget(self.shutdown_machines_btn)
+        #self.machines_frame_layout.addWidget(self.shutdown_machines_btn)
 
         self.recheck_calculations_btn = QInitButton("Проверить наличие сгенерированных расчетных файлов", callback=self.recheck_calc)
         self.machines_frame_layout.addWidget(self.recheck_calculations_btn)

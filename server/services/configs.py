@@ -8,6 +8,8 @@ import utils
 
 import json
 from urllib.parse import unquote
+from urllib.parse import urlparse
+from urllib.parse import parse_qs
 
 from database.database import Database
 db = Database()
@@ -23,6 +25,8 @@ from file_manager.file_manager import FileManager
 file_manager = FileManager()
 
 from file_manager.File import File
+
+
 
 def get_sync(request):
     data = request.get_json()
@@ -64,14 +68,16 @@ def upload_zip(request):
     return json.dumps({"sync_data": {"update_id": update_id, "time": t}}), 200
 
 def get_zip(request):
-    data = request.get_json()
-    ret = db.users.valid_token(data["token"])
+    data =  parse_qs(unquote(request.data))
+    ret = db.users.valid_token(data["token"][0])
     if not ret:
         return "Токен не валиден", 403
-    breakpoint()
-    program_name = data["program_name"]
 
-    path = os.path.join(config_manager["path"]["configs_path"], program_name + ".zip")
+    program_name = data["program_name"][0]
+
+    path = os.path.join(config["path"]["configs_path"], program_name + ".zip")
+
+    size = utils.get_file_size(path)
 
     response = Response(
         stream_with_context(utils._read_file_chunks(path)),
@@ -80,10 +86,6 @@ def get_zip(request):
             'Content-Length': size
         }
     )
-
-    @response.call_on_close
-    def on_close():
-        utils.delete_file(path)
 
     return response
 

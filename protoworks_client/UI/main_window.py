@@ -46,9 +46,9 @@ class MainWindow(QMainWindow):
         app_bar_layout_left = QHBoxLayout()
         app_bar_layout_right = QHBoxLayout()
 
-        app_bar_layout_left.addWidget(
-            QInitButton("Программы", callback=lambda: self.open_tab(None))
-        )
+        #app_bar_layout_left.addWidget(
+        #    QInitButton("Программы", callback=lambda: self.open_tab(None))
+        #)
 
         app_bar_layout_left.addWidget(
             QInitButton("Проекты", callback=lambda: self.open_tab("projects"))
@@ -70,9 +70,9 @@ class MainWindow(QMainWindow):
         #     QInitButton("Станки", callback=lambda: self.open_tab(None))
         # )
 
-        app_bar_layout_right.addWidget(
-            QInitButton("Общие задачи", callback=lambda: self.open_tab(None))
-        )
+        #app_bar_layout_right.addWidget(
+        #    QInitButton("Общие задачи", callback=lambda: self.open_tab(None))
+        #)
 
         app_bar_layout_right.addWidget(
             QInitButton("ПОМОГИТЕ", callback=lambda: self.open_tab("help"))

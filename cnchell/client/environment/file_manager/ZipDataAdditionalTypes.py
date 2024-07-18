@@ -46,14 +46,24 @@ class ProgramConfigurations:
         self.program_info = program_info
         if self.program_install_path and self.program_info:
             program_name = self.program_info["name"]
-            self.pathes.append({"real_path": self.program_install_path, "path": program_name+"_install", "desc": "Папка установки программы"})
-    
+
+            st = False
+            for d in self.pathes:
+                if d["path"] == (program_name+"_install"):
+                    st = True
+                    break
+            if not st:
+                self.pathes.append({"real_path": self.program_install_path, "path": program_name+"_install", "desc": "Папка установки программы"})
+
+        self._configs_file_done = []
+
     def get_str(self):
         out = "CONFIGS_PATHES_LIST:\n"
         for p in self.pathes:
             path = p["path"]
             desc = p["desc"]
-            out += f"{path} | {desc}\n"
+            d = {"path": path, "desc": desc}
+            out += (json.dumps(d) + "\n")
         out += "LIST_END\n\n"
 
         out += "CONFIGS_FILE_LIST:\n"
@@ -66,10 +76,11 @@ class ProgramConfigurations:
                     dirname = os.path.abspath(dirname)
                     rel = os.path.relpath(p, start=p_l["real_path"])
                     res = os.path.join(p_l["path"], rel)
-                    out += res
-                    out += "\n"
+                    if res not in self._configs_file_done:
+                        out += res
+                        out += "\n"
+                        self._configs_file_done.append(res)
                     st = True
-                    break
             
         out += "LIST_END\n\n"
 
@@ -77,12 +88,13 @@ class ProgramConfigurations:
         for l in self.links:
             link = l["link"]
             desc = l["desc"]
-            out += f"{link} | {desc}\n"
+            d = {"link": link, "desc": desc}
+            out += (json.dumps(d) + "\n")
         out += "LIST_END\n\n"
 
         #if self.program_install_path:
             #out += f"PROGRAM_INSTALL_PATH: {self.program_install_path}\n"
-        
+
         if self.program_exe_path and self.program_install_path and self.program_info:
             dirname, filename = os.path.split(self.program_exe_path)
             save_path = dirname
@@ -99,3 +111,44 @@ class ProgramConfigurations:
             out += f"PROGRAM_NAME_USER: {name_user}\n"
 
         return out
+
+class FilesOverwrite:
+    def __init__(self, files, dirs):
+        self.files = files
+        self.dirs = dirs
+        self.content = ""
+        self._arch_files = {}
+        self._files_done = []
+    
+    def get_str(self):
+        self.content += "\nFILES_LIST:"
+        for f in self.files:
+            try:
+                o = self._gen_file_specs(f)
+                self.content += "\n"
+                self.content += o
+            except:
+                pass
+        self.content += "\nLIST_END"
+        return self.content
+
+    def _gen_file_specs(self, f):
+        res = ""
+        for d in self.dirs:
+            if os.path.abspath(d["real_path"]) in os.path.abspath(f):
+                rel = os.path.relpath(f, start=d["real_path"])
+                res = os.path.join(d["path"], rel)
+        if res != "":
+            ret = {}
+            ret["path"] = res
+            arch_filename = utils.get_unique_id()
+            ret["arch_filename"] = arch_filename
+            if res in self._files_done:
+                raise ValueError
+            self._files_done.append(res)
+            self._arch_files[os.path.abspath(f)] = ret["arch_filename"]
+            return json.dumps(ret)
+        raise ValueError
+
+    def get_arch_filename(self, path):
+        return self._arch_files[path]

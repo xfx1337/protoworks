@@ -99,7 +99,7 @@ class FileManager:
             result_objects.append(File(path=f, f_type=FILE))
         return result_objects
 
-    def make_data_zip(self, files_list, relative=None, additional_data_to_send=None):
+    def make_data_zip(self, files_list, relative=None, additional_data_to_send=None, overwrite_entries=None, _enable_arch_filenames_overwrite=False):
         dirs = [f for f in files_list if f.f_type == FOLDER]
         files = [f for f in files_list if f.f_type == FILE]
 
@@ -107,13 +107,17 @@ class FileManager:
         data_file.create_entry()
         data_file.create_metadata()
         #data_file.create_dirs_list()
-        data_file.create_files_list()
+        data_file.create_files_list(_enable_arch_filenames_overwrite=_enable_arch_filenames_overwrite)
         if additional_data_to_send != None:
             data_file.create_additional_data(additional_data_to_send)
 
         file_name = utils.get_unique_id()
         data_filename = os.path.join(self.env.config_manager["path"]["temp_path"], (file_name))+".txt"
         zip_filename = os.path.join(self.env.config_manager["path"]["temp_path"], (file_name))+".zip"
+
+        if overwrite_entries != None:
+            for e in overwrite_entries:
+                data_file.overwrite_entry(e)
 
         with open(data_filename, "w", encoding="utf-8") as f:
             f.write(data_file.string())
@@ -124,6 +128,25 @@ class FileManager:
 
         return zip_filename
     
+    def get_data_file_from_zip(self, path):
+        data = ""
+        with zipfile.ZipFile(path, 'r') as archive:
+            with archive.open('PROTOWORKS_DATA.txt') as data_file:
+                data = str(data_file.read().decode('UTF-8'))
+        return data
+
+    def resolve_zip_data_file(self, data):
+        data = zip_data_file_decoder.decode(data)
+        return data
+
+    def generate_file_linkers(self, files, pathes):
+        files_o = []
+        for f in files:
+            for d in pathes:
+                if f.split("\\")[0] == d["path"]:
+                    files_o.append({"path": f, "real_path": f.replace(d["path"] + "\\", d["real_path"])})
+        return files_o
+
     def unzip_data_archive(self, path, extract_to):
         data = ""
         with zipfile.ZipFile(path, 'r') as archive:

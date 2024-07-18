@@ -6,6 +6,7 @@ from PySide6.QtGui import QIntValidator
 import os
 import json
 import ctypes
+import time
 
 from environment.tab_manager.Tab import Tab
 
@@ -32,6 +33,7 @@ from UI.widgets.QSelectOneFromList import QSelectOneFromList
 import subprocess
 
 from environment.file_manager.ZipDataAdditionalTypes import ProgramConfigurations 
+from environment.file_manager.ZipDataAdditionalTypes import FilesOverwrite
 from UI.widgets.QAskForFilesDialog import QAskForFilesDialog
 from environment.file_manager.File import File
 
@@ -100,13 +102,13 @@ class ProgramsWidget(QWidget, Tab):
             if t_c == -1:
                 t_c = "Отсутствует"
             else:
-                t_c = utils.time_by_unix(t)
+                t_c = utils.time_by_unix(t_c)
 
-            p = QProgramWidget(program["program_user_alias"], "app", "Открыть", lambda val=str(program): self.open_prog(program), [64,64], 
-            [["Информация", lambda val=str(program): self.show_info(program)],
-            ["Конфигурация", lambda val=str(program): self.configure_prog(program)], 
-            ["Обновить данные", lambda val=str(program): self.update_prog(program)], 
-            ["Удалить из каталога", lambda val=str(program): self.delete(program)]], 
+            p = QProgramWidget(program["program_user_alias"], "app", "Открыть", lambda val=program: self.open_prog(val), [64,64], 
+            [["Информация", lambda val=program: self.show_info(val)],
+            ["Конфигурация", lambda val=program: self.configure_prog(val)], 
+            ["Обновить данные", lambda val=program: self.update_prog(val)], 
+            ["Удалить из каталога", lambda val=program: self.delete(val)]], 
             [f"Последнее обновление данных(сервер): {utils.time_by_unix(t)}", 
             f"Последнее обновление данных(клиент): {t_c}"])
             self.scrollWidgetLayout.insertWidget(j, p)
@@ -172,13 +174,9 @@ class ProgramsWidget(QWidget, Tab):
         
         if option == "Обновить сервер":
             data = env.db.configs.get_configs_data(program["program_name"])
-            files = []
-            for f in data["files"]:
-                f = File(path=f, f_type=defines.FILE)
-                files.append(f)
 
             program_install_path = ""
-            d_name = [program["program_name"] + "_install"]
+            d_name = str(program["program_name"]) + "_install"
             for d in data["dirs"]:
                 if d["path"] == d_name:
                     program_install_path = d["real_path"]
@@ -186,13 +184,28 @@ class ProgramsWidget(QWidget, Tab):
             program_exe_path = program["program_exe_path"]
 
             programs_list = env.net_manager.configs.get_sync_data()
-            program_user_alias = programs_list[program["program_name"]]["program_user_alias"]
-            program = {"name": program["program_name"], "name_user": program_user_alias}
+            program_user_alias = str(programs_list[str(program["program_name"])]["program_user_alias"])
+            program = {"name": str(program["program_name"]), "name_user": program_user_alias}
 
             data_send = ProgramConfigurations(data["dirs"], data["links"], data["files"], program_install_path=program_install_path, 
             program_exe_path=program_exe_path, program_info=program)
-            zip_path = env.file_manager.make_data_zip(files, additional_data_to_send=data_send)
-            
+
+            entry = FilesOverwrite(data["files"], data["dirs"])
+            dc = {"entry_start": "FILES_LIST:", "entry_end": "LIST_END", "data": entry.get_str()}
+            files_overwrite = []
+
+            files_checked = []
+
+            for f in data["files"]:
+                if f not in files_checked:
+                    f = File(path=f, f_type=defines.FILE)
+                    f._overwrite_archive_filename = entry.get_arch_filename(f.path)
+                    files_overwrite.append(f)
+                    files_checked.append(f)
+            files_checked = []
+
+            zip_path = env.file_manager.make_data_zip(files_overwrite, additional_data_to_send=data_send, overwrite_entries = [dc], _enable_arch_filenames_overwrite=True)
+
             sync_data = env.net_manager.configs.upload_zip(zip_path, program["name"], program_user_alias)
             env.db.programs_sync.set_program_sync_date(program["name"], int(sync_data["time"]), sync_data["update_id"])
             env.db.configs.set_configs(program["name"], data["links"], data["dirs"], data["files"], program_exe_path)
@@ -204,15 +217,66 @@ class ProgramsWidget(QWidget, Tab):
 
         if option == "Обновить клиент":
             zip_path = env.net_manager.configs.get_zip(program["program_name"])
-            data = env.db.configs.get_configs_data(program["program_name"])
             idx = utils.get_unique_id() 
             filename = os.path.join(env.config_manager["path"]["temp_path"], (idx + ".txt"))
-            out = {"zip_path": zip_path, "data": data, "program": program}
+
+            data = env.file_manager.get_data_file_from_zip(zip_path)
+            data = env.file_manager.resolve_zip_data_file(data)
+
+            try:
+                configs_local = env.db.configs.get_configs_data(program["program_name"])
+            except:
+                env.db.configs.set_configs(program["program_name"], data["links"], data["pathes"], [], None)
+                utils.message("Конфигурация программы на сервере изменилась. Пожалуйста, переконфигурируйте программу, затем заново выполните обновление клиента.", tittle="Оповещение")
+                return
+
+            st = True
+            for d in data["pathes"]:
+                st_c = False
+                for r in configs_local["dirs"]:
+                    if r["path"] == d["path"] and r["desc"] == d["desc"]:
+                        st_c = True
+                if not st_c:
+                    st = False
+                    break
+                if "real_path" not in r:
+                    st = False
+                    break
+            
+            if not st:
+                env.db.configs.set_configs(program["program_name"], data["links"], data["pathes"], [], None)
+                utils.message("Конфигурация программы на сервере изменилась. Пожалуйста, переконфигурируйте программу, затем заново выполните обновление клиента.", tittle="Оповещение")
+                return
+
+
+
+            linkers = env.file_manager.generate_file_linkers(data["configs_files"], configs_local["dirs"])
+            files_write = []
+            for l in linkers:
+                files_write.append(l["real_path"])
+
+            archive_linkers = []
+            for i in range(len(data["files"])):
+                d = {"arch_filename": data["files"][i]["arch_filename"]}
+                for l in linkers:
+                    if l["path"] == data["files"][i]["path"]:
+                        d["path"] = l["real_path"]
+                        break
+                archive_linkers.append(d)
+           
+            
+            env.db.configs.set_configs(program["program_name"], files=files_write)
+
+            out = {"zip_path": zip_path, "linkers": archive_linkers, "temp_path": env.config_manager["path"]["temp_path"]}
             with open(filename, "w") as f:
                 f.write(json.dumps(out))
 
-            ctypes.windll.shell32.ShellExecuteW(None, "runas", "additional\\unzip_config\\unzip_config.bat", f"{filename}", None, 1)
-            data_file = self.env.file_manager.unzip_data_configs_archive(zip_path, data)
+            programs_list = env.net_manager.configs.get_sync_data()
+            t = programs_list[program["program_name"]]["date"]
+            update_id = programs_list[program["program_name"]]["update_id"]
+            env.db.programs_sync.set_program_sync_date(program["program_name"], int(time.time()), update_id)
+
+            ctypes.windll.shell32.ShellExecuteW(None, "runas", "additional\\admin_unzip\\admin_unzip.bat", f"{filename}", None, 1)
             
 
     def add_program(self):

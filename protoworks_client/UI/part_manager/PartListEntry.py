@@ -152,10 +152,19 @@ class PartListEntry(QFrame):
             self.modified = True
 
     def open(self):
-        os.startfile(self.part["path"], 'open')
+        client_path = utils.remove_path(self.project["server_path"], self.part["path"])
+        project_path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
+        if project_path[-1] != "\\":
+            project_path += "\\"
+        path = str(os.path.join(os.path.abspath(project_path), client_path)) # fucken python optimizer breaking
+        os.startfile(path, 'open')
 
     def open_dir(self):
-        path = self.part["path"]
+        client_path = utils.remove_path(self.project["server_path"], self.part["path"])
+        project_path = os.path.join(env.config_manager["path"]["projects_path"], self.project["name"])
+        if project_path[-1] != "\\":
+            project_path += "\\"
+        path = str(os.path.join(os.path.abspath(project_path), client_path)) # fucken python optimizer breaking
         path = "\\".join(path.split("\\")[:-1])
         subprocess.Popen(f'explorer "{path}"')
     

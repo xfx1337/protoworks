@@ -103,7 +103,10 @@ class ProgramConfigurationWindow(QWidget):
         try:
             data = env.db.configs.get_configs_data(self.program["program_name"])
             if "program_exe_path" in data:
-                self.program_exe_path_show.setText("Путь файла запуска: " + data["program_exe_path"])
+                if data["program_exe_path"] == None:
+                    self.program_exe_path_show.setText("Путь файла запуска: Нет")
+                else:
+                    self.program_exe_path_show.setText("Путь файла запуска: " + data["program_exe_path"])
                 self.program_exe_path = data["program_exe_path"]
         except:
             utils.message("Не найдены конфигурационные файлы. Пожалуйста, обновите данные во вкладке 'Программы'")
