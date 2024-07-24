@@ -241,7 +241,6 @@ def cancel_job(request):
         pause = data["pause"]
     else:
         pause = False
-
     jobs = db.work_queue.get_jobs(int(idx))
     if jobs[0]["status"] == "В работе":
         jobs[0]["status"] = "Отменена"

@@ -30,7 +30,7 @@ class Machines:
         return r.text
 
     def edit_machine(self, idx, name, unique_info, plate, delta, gcode_manager, baudrate):
-        r = self.net_manager.request("/api/machines/edit", {"id": idx, "name": name, "unique_info": unique_info, "plate": plate,
+        r = self.net_manager.request("/api/machines/edit", {"idx": idx, "name": name, "unique_info": unique_info, "plate": plate,
         "delta": delta, "gcode_manager": gcode_manager, "baudrate": baudrate})
         if r.status_code != 200:
             raise exceptions.REQUEST_FAILED(r.text)

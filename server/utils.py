@@ -151,6 +151,11 @@ def relative(self, path, main):
     return filename
 
 def get_local_ip():
+    try:
+        if config["custom"]["override_local_ip"] != "":
+            return config["custom"]["override_local_ip"]
+    except:
+        pass
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
     ip = s.getsockname()[0]

@@ -3,6 +3,7 @@ from PySide6.QtCore import Signal, QObject
 from PySide6.QtWidgets import QPushButton, QFrame, QHBoxLayout, QVBoxLayout, QWidget, QLabel, QScrollArea, QMenu, QFileDialog, QApplication
 
 import os, shutil
+import json
 import subprocess
 import utils
 
@@ -25,6 +26,7 @@ from UI.widgets.QAskForNumberDialog import QAskForNumberDialog
 from UI.widgets.QYesOrNoDialog import QYesOrNoDialog
 from UI.widgets.QAskForFilesDialog import QAskForFilesDialog
 from UI.widgets.QAskForLineDialog import QAskForLineDialog
+from UI.widgets.QAskForDirectoryDialog import QAskForDirectoryDialog
 
 from UI.tabs.machines_tab.widgets.MachineInteractiveMover import MachineInteractiveMover
 from UI.tabs.machines_tab.widgets.MachineInteractiveTemperature import MachineInteractiveTemperature
@@ -165,6 +167,7 @@ class MachineFDMListEntry(QFrame):
             action_stop = self.menu.addAction("Отменить работу")
             #action_edit = self.menu.addAction("Редактировать")
             action_delete = self.menu.addAction("Удалить")
+            action_rewrite_sd = self.menu.addAction("Перезаписать SD карту")
 
             action_force_start.triggered.connect(self.force_start)
             action_restart_handler.triggered.connect(self.restart_handler)
@@ -175,6 +178,7 @@ class MachineFDMListEntry(QFrame):
             action_delete.triggered.connect(self.delete_self)
             action_stop.triggered.connect(self.stop_job)
             action_pause.triggered.connect(self.pause_job)
+            action_rewrite_sd.triggered.connect(self.rewrite_sd)
 
             action_queue.triggered.connect(self.open_queue)
 
@@ -204,6 +208,45 @@ class MachineFDMListEntry(QFrame):
         self.drag_enable = drag_enable
 
         self.update_data()
+
+    def rewrite_sd(self):
+        breakpoint()
+        try:
+            unique_info = json.loads(env.net_manager.machines.get_machine(self.machine["id"])["unique_info"].replace("'", '"'))
+        except:
+            machines = env.net_manager.machines.get_machines_list()["machines"]
+            x = -1
+            for m in machines:
+                if int(m["id"]) > x:
+                    x = int(m["id"])
+            unique_info = {"data": str(x+1)}
+            fname = str(unique_info["data"])
+            dlg = QAskForDirectoryDialog("Выберите sd карту")
+            dlg.exec()
+            folder = dlg.fname
+            open(os.path.join(folder, f"PWP{fname}.gcode"), "a").close()
+            env.net_manager.machines.edit_machine(self.machine["id"], self.machine["name"], unique_info, self.machine["plate"], 
+            self.machine["delta"], self.machine["gcode_manager"], self.machine["baudrate"])
+            return
+
+        dlg = QAskForDirectoryDialog("Выберите sd карту")
+        dlg.exec()
+        folder = dlg.fname
+        try:
+            fname = str(unique_info["data"])
+        except:
+            if fname == "-1":
+                machines = env.net_manager.machines.get_machines_list()["machines"]
+                x = -1
+                for m in machines:
+                    if int(m["id"]) > x:
+                        x = int(m["id"])
+                unique_info = {"data": str(x+1)}
+                fname = str(unique_info["data"])
+
+        open(os.path.join(folder, f"PWP{fname}.gcode"), "a").close()
+        env.net_manager.machines.edit_machine(self.machine["id"], self.machine["name"], unique_info, self.machine["plate"], 
+        self.machine["delta"], self.machine["gcode_manager"], self.machine["baudrate"])
 
     def mouseMoveEvent(self, event):
         if not self.drag_enable:

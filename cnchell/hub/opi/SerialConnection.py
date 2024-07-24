@@ -16,6 +16,16 @@ class SerialConnection(threading.Thread):
         self.write_queue = QueueUnique()
         self.read_queue = QueueAutoDelete()
         self.ser = serial.Serial(self.port, self.baudrate)
+
+        data_str = self.ser.read(self.ser.inWaiting()).decode('ascii')
+        time.sleep(0.5)
+        self.ser.write("indent_hub\r\n".encode())
+        time.sleep(1)
+        data_str = self.ser.read(self.ser.inWaiting()).decode('ascii')
+        if "hub indent" not in data_str:
+            if "boot up" not in data_str:
+                raise KeyError
+
         #self.ser.set_low_latency_mode(True)
         self.daemon = True
         self.send_next_after = "ok"

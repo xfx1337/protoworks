@@ -55,6 +55,7 @@ class ProjectListEntry(QDoubleLabel):
         action_open = self.menu.addAction("Открыть")
         action_open_dir = self.menu.addAction("Открыть директорию")
         action_sync = self.menu.addAction("Синхронизировать")
+        action_resync = self.menu.addAction("Пометить синхронизированным")
         action_pass = self.menu.addAction("Сдать")
         action_delete = self.menu.addAction("Удалить")
         action_properties = self.menu.addAction("Свойства")
@@ -65,6 +66,7 @@ class ProjectListEntry(QDoubleLabel):
         action_pass.triggered.connect(self.pass_project)
         action_delete.triggered.connect(self.delete)
         action_properties.triggered.connect(self.open_properties)
+        action_resync.triggered.connect(self.force_sync)
 
         if self.project["status"] == defines.PROJECT_IN_WORK and utils.unix_is_expired(self.project["time_deadline"]):
             self.label1.setStyleSheet(stylesheets.combine([stylesheets.YELLOW_HIGHLIGHT, stylesheets.DISABLE_BORDER]))
@@ -73,6 +75,10 @@ class ProjectListEntry(QDoubleLabel):
         if self.project["status"] == defines.PROJECT_DONE:
             #self.setStyleSheet(stylesheets.combine([stylesheets.BLACK_HIGHLIGHT, DISABLE_BORDER]))
             self.label1.setText(f'[Сдан] {self.project["name"]}')
+
+    def force_sync(self):
+        env.net_manager.files.after_project_update(self.project["id"])
+        utils.message("Выполнено", tittle="Оповещение")
 
     def contextMenuEvent(self, event):
         self.menu.exec(event.globalPos())

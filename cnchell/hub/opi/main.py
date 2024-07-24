@@ -116,8 +116,14 @@ def arduino_watchdog_thread():
             ports = utils.list_serial()
             if len(ports) > 0:
                 try:
-                    watchdog.arduino_serial_connection = SerialConnection(ports[0])
-                    watchdog.arduino_hub_connected = True
+                    for p in ports:
+                        try:
+                            watchdog.arduino_serial_connection = SerialConnection(p)
+                            watchdog.arduino_hub_connected = True
+                            print(watchdog.arduino_serial_connection.port)
+                            break
+                        except:
+                            pass
                 except:
                     watchdog.arduino_hub_connected = False
 

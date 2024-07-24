@@ -303,7 +303,7 @@ def add_machine():
 
 @app.route('/api/machines/edit', methods=['POST'])
 def edit_machine():
-    return sevices.machines.edit_machine(request)
+    return services.machines.edit_machine(request)
 
 @app.route('/api/machines/list', methods=['POST'])
 def list_machines():

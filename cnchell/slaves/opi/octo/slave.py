@@ -65,7 +65,7 @@ def get_unique_machine_data(port):
     global unique_infos
     uuid = ""
     try:
-        ser = serial.Serial(port, baudrate=115200)
+        ser = serial.Serial(port, baudrate=115200, timeout=5)
         ser.write('\r\nM20\r\n'.encode())
         st = time.time()
         line = []

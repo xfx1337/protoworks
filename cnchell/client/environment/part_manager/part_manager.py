@@ -99,5 +99,11 @@ class PartManager:
                 not_parts.append(f)
         if len(relative_files) > 0: 
             parts = self.env.net_manager.parts.indentify_parts(relative_files)
+            server_path = self.env.net_manager.files.get_server_path("projects_path")
+            for i in range(len(parts)):
+                path_p = utils.remove_path(server_path, parts[i]["path"])
+                parts[i]["path"] = os.path.join(self.env.config_manager["path"]["projects_path"], path_p)
+
+
             return parts, not_parts
         return [], not_parts

@@ -31,12 +31,18 @@ class ActionManager:
         print(f"executing {json.dumps(action)}")
         if action["action"] == "CANCEL_JOB":
             for d in action["devices"]:
-                services.machines.cancel_job(FakeFlaskRequest({"machine_id": int(d.replace("MACHINE", "")), "token": db.users.get_token("BYPASS")}))
-        
+                try:
+                    services.machines.cancel_job(FakeFlaskRequest({"machine_id": int(d.replace("MACHINE", "")), "token": db.users.get_token("BYPASS")}))
+                except:
+                    pass
+
         if action["action"] == "NEXT_JOB":
             for d in action["devices"]:
                 idx = int(d.replace("MACHINE", ""))
-                try: db.machines.get_machine(idx)
+                try: 
+                    m = db.machines.get_machine(idx)
+                    if m == None:
+                        raise KeyError
                 except: continue
                 jobs = db.work_queue.get_jobs(int(d.replace("MACHINE", "")))
                 # if len(jobs) > 0:

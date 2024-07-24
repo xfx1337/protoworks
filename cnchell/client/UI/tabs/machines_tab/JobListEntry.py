@@ -325,9 +325,10 @@ class JobListEntry(QFrame):
             if j["status"] == "В работе":
                 self.running_job = j
 
-        self.running_job["status"] = "Ожидание"
-        env.net_manager.machines.cancel_job(self.running_job["machine_id"])
-        env.net_manager.work_queue.overwrite_job(self.running_job["id"], self.running_job)
+        if self.running_job != None:
+            self.running_job["status"] = "Ожидание"
+            env.net_manager.machines.cancel_job(self.running_job["machine_id"])
+            env.net_manager.work_queue.overwrite_job(self.running_job["id"], self.running_job)
         env.net_manager.work_queue.move_job(self.job["index"], 0, self.job["machine_id"])
 
 

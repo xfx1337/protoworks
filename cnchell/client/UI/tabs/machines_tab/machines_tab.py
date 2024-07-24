@@ -298,7 +298,7 @@ class MachinesWidget(QWidget, Tab):
     
     def open_slave_list(self):
         self.wnd = SlavesListWindow()
-        self.nd.show()
+        self.wnd.show()
     
     def open_machine_list(self):
         self.wnd = MachinesListWindow()

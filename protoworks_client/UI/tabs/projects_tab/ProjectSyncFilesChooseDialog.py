@@ -62,10 +62,17 @@ class ProjectSyncFilesChooseDialog(QDialog):
         self.main_layout.addSpacing(20)
         self.main_layout.addLayout(self.right_side_layout, 40)
 
+        #self.force_sync_btn = QInitButton("Пометить синхронизированным(Force Sync State)", callback=self.force_sync)
+
         self.layout.addLayout(self.main_layout)
         self.layout.addWidget(self.buttonBox)
+        #self.layout.addWidget(self.force_sync_btn)
 
         self.setLayout(self.layout)
+
+    def force_sync(self):
+        env.net_manager.files.after_project_update(self.project["id"])
+        utils.message("Выполнено", tittle="Оповещение")
 
     def closeEvent(self, event):
         if self.sure != None:

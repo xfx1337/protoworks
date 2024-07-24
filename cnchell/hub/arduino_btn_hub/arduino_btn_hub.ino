@@ -144,6 +144,11 @@ void loop(){
           Serial.println("ok");
         }
 
+        else if (input.indexOf("indent_hub") > -1) {
+          Serial.println("hub indent");
+          Serial.println("ok");
+        }
+
         else {
           Serial.println("invalid command");
         }

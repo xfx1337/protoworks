@@ -44,8 +44,8 @@ class Machines:
         delta_radius = delta["radius"]
         delta_height = delta["height"]
         unique_info = str(unique_info)
-        cursor.execute("UPDATE machines SET name=%s, x=%s, y=%s, z=%s, unique_info=%s, slave_id=%s, delta_radius=%s, delta_height=%s, gcode_manager=%s, baudrate=%s", 
-        (name, x, y, z, unique_info, slave_id, delta_radius, delta_height, gcode_manager, baudrate))
+        cursor.execute("UPDATE machines SET name=%s, x=%s, y=%s, z=%s, unique_info=%s, delta_radius=%s, delta_height=%s, gcode_manager=%s, baudrate=%s", 
+        (name, x, y, z, unique_info, delta_radius, delta_height, gcode_manager, baudrate))
         connection.commit()
         self.db.close(connection)
 
