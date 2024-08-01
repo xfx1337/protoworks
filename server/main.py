@@ -63,20 +63,37 @@ utils.check_userlist()
 
 def backup_watchdog():
     x = time.gmtime()
-    ep = datetime.datetime(x.tm_year,x.tm_mon,x.tm_mday,0,0,0).timestamp()+cfg["backup"]["first"]
+    ep = datetime.datetime(x.tm_year,x.tm_mon,x.tm_mday,0,0,0).timestamp()+int(cfg["backup"]["first"])
     if time.time() > ep:
-        ep += cfg["backup"]["delay"]
+        x = time.time()
+        while x > ep:
+            ep += int(cfg["backup"]["delay"])
     
     while True:
-        time.sleep(5)
-        if time.time() >= ep:
-            ep += cfg["backup"]["delay"]
-            utils.backup(cfg["path"]["projects_path"], cfg["backup"]["backup_path"])
+        try:
+            time.sleep(5)
+            if time.time() >= ep:
+                ep += int(cfg["backup"]["delay"])
+                print("[backup] backing up now")
+                utils.backup(cfg["path"]["projects_path"], cfg["backup"]["backup_path"])
+                print("[backup] finished")
+                time.sleep(6)
+                x = len([name for name in os.listdir(cfg["backup"]["backup_path"]) if os.path.isfile(os.path.join(cfg["backup"]["backup_path"], name))])
+                if x >= int(cfg["backup"]["max_backups_count"]):
+                    list_of_files = os.listdir(cfg["backup"]["backup_path"])
+                    x = cfg["backup"]["backup_path"]
+                    full_path = [("{0}".format(x)) for x in list_of_files]
+                    for i in range(len(full_path)):
+                        full_path[i] = os.path.join(x, full_path[i])
+                    oldest_file = min(full_path, key=os.path.getctime)
+                    os.remove(oldest_file)
+        except:
+            pass
 
 if cfg["backup"]["enabled"]:
     print("[backup] running checking thread")
-    backup_thread = threading.Thread(target=backup_watchdog)
-    #backup_thread.start()
+    backup_thread = threading.Thread(target=backup_watchdog, daemon=True)
+    backup_thread.start()
 
 print(f"[main] running flask server")
 print("")
@@ -103,6 +120,32 @@ mhd.start()
 def main_page():
     return utils.get_main_page(), 200
 
+@app.route('/api/restart_self', methods=['POST'])
+def restart_self():
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+    return utils.restart_self(), 200
+
+@app.route('/api/status', methods=['POST'])
+def server_status():
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+    
+    return json.dumps(utils.get_status()), 200
+
+@app.route('/api/get_lan_clients', methods=['POST'])
+def get_lan_clients():
+    data = request.get_json()
+    ret = db.users.valid_token(data["token"])
+    if not ret:
+        return "Токен не валиден", 403
+
+    return json.dumps({"clients": utils.get_lan_clients()}), 200
+
 @app.route('/api/valid_token', methods=['POST'])
 def valid_token():
     if not db.users.valid_bearer(request.headers.get("Authorization")): 
@@ -112,6 +155,18 @@ def valid_token():
 @app.route('/api/login', methods = ['POST'])
 def login():
     return services.auth.login(request)
+
+@app.route('/api/users/get_users_list', methods=['POST'])
+def get_users_list():
+    return services.auth.get_users_list(request)
+
+@app.route('/api/users/register_user', methods=['POST'])
+def register_user():
+    return services.auth.register_user(request)
+
+@app.route('/api/users/remove_user', methods=['POST'])
+def remove_user():
+    return services.auth.remove_user(request)
 
 @app.route('/api/projects/get_projects', methods = ['POST'])
 def get_projects():
@@ -448,4 +503,4 @@ def disconnect():
     services.monitoring.update_monitoring({"device": "MAIN_HUB", "status": "offline"})
 
 
-socketio.run(app, debug=True, host="0.0.0.0")
+socketio.run(app, debug=False, host="0.0.0.0")

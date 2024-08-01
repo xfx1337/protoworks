@@ -1,7 +1,9 @@
 import hashlib
 import json
 
+import signal
 import os
+import sys
 import zipfile
 
 from database.database import Database
@@ -9,6 +11,7 @@ db = Database()
 
 import uuid
 import time
+import psutil
 from datetime import datetime as dt
 
 from config import Config
@@ -22,6 +25,10 @@ from contextlib import closing
 import ping3
 from ping3 import ping
 ping3.EXCEPTIONS = True
+
+import urllib.request
+
+import subprocess
 
 def get_hostname_ip(hostname, ip):
     try:
@@ -67,6 +74,7 @@ def get_ping(ip):
 
 def check_socket(host, port):
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+        sock.settimeout(3.0)
         if sock.connect_ex((host, port)) == 0:
             return True
         else:
@@ -161,3 +169,51 @@ def get_local_ip():
     ip = s.getsockname()[0]
     s.close()
     return ip
+
+def backup(origin_path, dest):
+    dates = dt.fromtimestamp(time_now()).strftime("%d_%m_%Y_%H_%M_%S")
+    fname = f"protoworks_backup_{dates}.zip"
+    dest_f = os.path.join(dest, fname)
+    zip(origin_path, dest_f)
+
+def get_status():
+    data = {}
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    ip = s.getsockname()[0]
+    s.close()
+    data["local_ip"] = ip
+    data["local_ip_override"] = "N/A"
+    try:
+        if config["custom"]["override_local_ip"] != "":
+            data["local_ip_override"] = config["custom"]["override_local_ip"]
+    except:
+        pass
+
+    public_ip = urllib.request.urlopen('https://v4.ident.me/').read().decode('utf8')
+    data["public_ip"] = public_ip
+    data["uptime"] = time.time() - psutil.boot_time()
+    try:
+        data["hub_status"] = db.monitoring.get_device("MAIN_HUB")["status"]
+    except:
+        data["hub_status"] = "N/A"
+
+    data["cpu_load"] = psutil.cpu_percent()
+    data["ram_total"] = psutil.virtual_memory().total
+    data["ram_used"] = data["ram_total"] - psutil.virtual_memory().available
+    return data
+
+def get_lan_clients():
+    ret = subprocess.check_output(['sw_requirements\\map_network.bat']).decode()
+    ret = ret.split("clients_list\r\n")[-1]
+    ret = ret.replace("'", "")
+    ret = ret.replace("[", "")
+    ret = ret.replace("]", "")
+    ret = ret.replace("\r\n", "")
+    lst = ret.split(", ")
+    return lst
+
+def restart_self():
+    path = config["path"]["restart_routine_bat"]
+    os.system(f"start {path}")
+    os.kill(os.getpid(),signal.SIGTERM)

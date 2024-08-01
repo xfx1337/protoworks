@@ -44,14 +44,13 @@ class Users:
 
         if content != None:
             if password != content[2] or privileges != content[3]:
-                with self.lock:
-                    cursor.execute(f"""
-                    UPDATE users SET password = %s WHERE username = %s
-                    """, [password, username])
-                    cursor.execute(f"""
-                    UPDATE users SET privileges = %s WHERE username = %s
-                    """, [privileges, username])
-                    connection.commit()
+                cursor.execute(f"""
+                UPDATE users SET password = %s WHERE username = %s
+                """, [password, username])
+                cursor.execute(f"""
+                UPDATE users SET privileges = %s WHERE username = %s
+                """, [privileges, username])
+                connection.commit()
                 self.db.close(connection)
                 return 0
             self.db.close(connection)
@@ -186,3 +185,23 @@ class Users:
         
         self.db.close(connection)
         return 0
+
+    def get_users_list(self):
+        connection, cursor = self.db.get_conn_cursor()
+        cursor.execute(f"""
+        SELECT * FROM users""")
+        content = cursor.fetchall()
+        self.db.close(connection)
+        ret = []
+        for u in content:
+            ret.append({"username": u[1], "privileges": u[3]})
+        
+        return ret
+
+    def remove_user(self, username):
+        connection, cursor = self.db.get_conn_cursor()
+        cursor.execute(f"""
+        DELETE FROM users WHERE username = %s
+        """, [username])
+        connection.commit()
+        self.db.close(connection)
