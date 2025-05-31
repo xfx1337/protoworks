@@ -15,7 +15,7 @@ import services.users
 
 db.create_database()
 
-bot = telebot.TeleBot("7438534622:AAHr6_GPRBSveJ5kIBNxm1o9dKCS4V6jBmc")
+bot = telebot.TeleBot("YOUR TOKEN THERE")
 VOICE_PLAYBACK_SERVER = "http://ayaconference.ru:5358"
 #VOICE_PLAYBACK_SERVER = "http://127.0.0.1:2358"
 
