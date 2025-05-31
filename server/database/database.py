@@ -19,18 +19,23 @@ from database.slaves import Slaves
 from database.hub import Hub
 from database.monitoring import Monitoring
 from database.external_bindings import Bindings
-
+from config import Config
 import exceptions
 
 @singleton
 class Database:
     def __init__(self):
-        #try: connection = psycopg2.connect(dbname='protoworks', user='postgres', password='Flvbybcnhfnjh', host='localhost')
-        #except: raise exceptions.DatabaseInitFailed("failed to init db")
         self.connected = 0
+
+        cfg = {}
+        try: cfg = Config('config.ini')
+        except InvalidConfig as e:
+            print(e)
+            sys.exit()
+        
         try:
             self.connection_pool = psycopg2.pool.ThreadedConnectionPool(5, 50, dbname='protoworks', 
-            user='postgres', password='Flvbybcnhfnjh', host='localhost')
+            user='postgres', password=cfg["database"]["db_pass"], host='localhost')
         except:
             raise exceptions.DatabaseInitFailed("failed to init db")
         if not self.connection_pool:

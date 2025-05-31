@@ -1,0 +1,2 @@
+It's not tested that project will correctly work without 3d printers and other hardware, that is documentated on wiki.
+Because it shouldn't not work without that hardware!
